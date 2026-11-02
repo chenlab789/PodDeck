@@ -93,7 +93,9 @@
                             <TextBlock x:Name="VolText" DockPanel.Dock="Right" Style="{StaticResource Muted}" FontSize="12"/>
                             <TextBlock Text="Volume" FontSize="12" FontWeight="SemiBold" Foreground="#F5F5F7"/>
                         </DockPanel>
-                        <Slider x:Name="Vol" Style="{StaticResource FatSlider}" ValueChanged="Vol_ValueChanged"/>
+                        <Border x:Name="VolBar" Height="26" CornerRadius="13" Background="#24FFFFFF" Cursor="Hand">
+                            <Border x:Name="VolFill" HorizontalAlignment="Left" Width="0" CornerRadius="13" Background="#F5F5F7" IsHitTestVisible="False"/>
+                        </Border>
                     </StackPanel>
                 </Border>
 

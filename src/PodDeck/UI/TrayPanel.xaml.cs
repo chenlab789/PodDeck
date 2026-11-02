@@ -15,7 +15,6 @@ public partial class TrayPanel : Window
     static readonly Brush OffDot = new SolidColorBrush(Color.FromArgb(0x80, 0xFF, 0xFF, 0xFF));
 
     readonly Settings _settings;
-    bool _syncingVol;
     DateTime _hiddenAt;
 
     public event Action? ConnectToggle;
@@ -30,17 +29,35 @@ public partial class TrayPanel : Window
         BuildModes();
         RefreshToggles();
 
-        // Drag anywhere on the bar, not only on the thin thumb.
-        Vol.PreviewMouseLeftButtonDown += (_, e) => { Vol.CaptureMouse(); SetVolFromPointer(e); e.Handled = true; };
-        Vol.PreviewMouseMove += (_, e) => { if (Vol.IsMouseCaptured) SetVolFromPointer(e); };
-        Vol.PreviewMouseLeftButtonUp += (_, e) => { Vol.ReleaseMouseCapture(); e.Handled = true; };
-        Vol.PreviewMouseWheel += (_, e) => { Vol.Value = Math.Clamp(Vol.Value + Math.Sign(e.Delta) * 5, 0, 100); e.Handled = true; };
+        // Plain bar instead of a Slider: press anywhere and drag, like Control Center.
+        VolBar.MouseLeftButtonDown += (_, e) => { VolBar.CaptureMouse(); SetVolFromPointer(e); e.Handled = true; };
+        VolBar.MouseMove += (_, e) => { if (VolBar.IsMouseCaptured) SetVolFromPointer(e); };
+        VolBar.MouseLeftButtonUp += (_, e) => { VolBar.ReleaseMouseCapture(); e.Handled = true; };
+        VolBar.MouseWheel += (_, e) => { SetVol(_vol + Math.Sign(e.Delta) * 5, true); e.Handled = true; };
+        VolBar.SizeChanged += (_, _) => PaintVol();
     }
+
+    double _vol;
 
     void SetVolFromPointer(System.Windows.Input.MouseEventArgs e)
     {
-        double x = e.GetPosition(Vol).X;
-        Vol.Value = Math.Clamp(x / Math.Max(1, Vol.ActualWidth), 0, 1) * 100;
+        double x = e.GetPosition(VolBar).X;
+        SetVol(Math.Clamp(x / Math.Max(1, VolBar.ActualWidth), 0, 1) * 100, true);
+    }
+
+    void SetVol(double v, bool apply)
+    {
+        _vol = Math.Clamp(v, 0, 100);
+        PaintVol();
+        VolText.Text = $"{Math.Round(_vol)}";
+        if (apply && VolBar.IsEnabled) BtAudio.SetVolume((float)(_vol / 100));
+    }
+
+    void PaintVol()
+    {
+        double w = VolBar.ActualWidth;
+        // Keep at least a full pill end visible so the fill reads as rounded, like iOS.
+        VolFill.Width = _vol <= 0 ? 0 : Math.Max(26, w * _vol / 100);
     }
 
     /// <summary>Clicking the tray icon while the panel is open deactivates it first; don't reopen it.</summary>
@@ -80,11 +97,10 @@ public partial class TrayPanel : Window
         }
 
         var v = BtAudio.GetVolume();
-        Vol.IsEnabled = v is not null;
-        _syncingVol = true;
-        Vol.Value = (v ?? 0) * 100;
-        _syncingVol = false;
-        VolText.Text = v is null ? "—" : $"{Math.Round(v.Value * 100)}";
+        VolBar.IsEnabled = v is not null;
+        VolBar.Opacity = v is null ? 0.4 : 1;
+        SetVol((v ?? 0) * 100, false);
+        if (v is null) VolText.Text = "—";
     }
 
     void AddBar(string label, int? level, bool charging, int low, bool inEar)
@@ -155,13 +171,6 @@ public partial class TrayPanel : Window
         _settings.Save();
         RefreshToggles();
         if (_settings.KeepStereo) KeepStereoTurnedOn?.Invoke();
-    }
-
-    void Vol_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        if (_syncingVol) return;
-        BtAudio.SetVolume((float)(e.NewValue / 100));
-        VolText.Text = $"{Math.Round(e.NewValue)}";
     }
 
     void ConnBtn_Click(object sender, RoutedEventArgs e) => ConnectToggle?.Invoke();
