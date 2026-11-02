@@ -18,7 +18,7 @@ public partial class TrayPanel : Window
     DateTime _hiddenAt;
 
     public event Action? ConnectToggle;
-    public event Action? KeepStereoTurnedOn;
+    public event Action? KeepStereoToggleRequested;
     public event Action? QuitRequested;
 
     public TrayPanel(Settings settings)
@@ -165,13 +165,14 @@ public partial class TrayPanel : Window
         RefreshToggles();
     }
 
+    /// <summary>The app decides whether Keep Stereo can turn on (it needs a real second mic).</summary>
     void StereoTile_Click(object sender, RoutedEventArgs e)
     {
-        _settings.KeepStereo = !_settings.KeepStereo;
-        _settings.Save();
+        KeepStereoToggleRequested?.Invoke();
         RefreshToggles();
-        if (_settings.KeepStereo) KeepStereoTurnedOn?.Invoke();
     }
+
+    public void Refresh() => RefreshToggles();
 
     void ConnBtn_Click(object sender, RoutedEventArgs e) => ConnectToggle?.Invoke();
     void Quit_Click(object sender, RoutedEventArgs e) => QuitRequested?.Invoke();

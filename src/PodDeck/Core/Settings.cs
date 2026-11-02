@@ -11,6 +11,8 @@ public sealed class Settings
     public bool LowBatteryWarning { get; set; } = true;
     public int LowBatteryLevel { get; set; } = 20;
     public string DeviceName { get; set; } = "AirPods";
+    /// <summary>Default audio endpoints from before Keep Stereo was turned on.</summary>
+    public Dictionary<string, string>? DefaultsBeforeKeepStereo { get; set; }
 
     static string Dir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "PodDeck");
     static string FilePath => Path.Combine(Dir, "settings.json");

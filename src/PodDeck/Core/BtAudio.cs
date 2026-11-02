@@ -130,23 +130,71 @@ public static class BtAudio
 
     // ---------- keep stereo ----------
 
+    // Virtual mics carry no sound unless the user feeds them; never pick one automatically.
+    static readonly string[] VirtualMicHints =
+        { "NVIDIA Broadcast", "Steam Streaming", "Voicemod", "Camo", "Virtual", "Stereo Mix", "VB-Audio", "CABLE" };
+
+    static bool IsVirtual(string name) => VirtualMicHints.Any(h => name.Contains(h, StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>A real, active microphone that is not the AirPods, or null.</summary>
+    public static string? FindRealOtherMic()
+    {
+        using var en = new MMDeviceEnumerator();
+        return en.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active)
+            .Select(d => d.FriendlyName)
+            .FirstOrDefault(n => !n.Contains(NameMatch, StringComparison.OrdinalIgnoreCase) && !IsVirtual(n));
+    }
+
+    /// <summary>Current default endpoint ids, keyed "flow:role", so they can be restored later.</summary>
+    public static Dictionary<string, string> SnapshotDefaults()
+    {
+        var snap = new Dictionary<string, string>();
+        using var en = new MMDeviceEnumerator();
+        foreach (var flow in new[] { DataFlow.Render, DataFlow.Capture })
+            foreach (var role in new[] { Role.Console, Role.Multimedia, Role.Communications })
+            {
+                try { snap[$"{(int)flow}:{(int)role}"] = en.GetDefaultAudioEndpoint(flow, role).ID; }
+                catch { /* no default for this role */ }
+            }
+        return snap;
+    }
+
+    public static void RestoreDefaults(Dictionary<string, string> snap)
+    {
+        var policy = (IPolicyConfig)new PolicyConfigClient();
+        foreach (var (key, id) in snap)
+            policy.SetDefaultEndpoint(id, int.Parse(key.Split(':')[1]));
+    }
+
     /// <summary>
-    /// Make AirPods stereo the default output for every role and move the default mic
-    /// to a non-AirPods device, so apps stop opening the low-quality Hands-Free profile.
-    /// Returns the name of the mic it picked, or null if none was found.
+    /// Make AirPods stereo the default output and move the default mic to a REAL non-AirPods
+    /// mic, so apps stop opening the low-quality Hands-Free profile. Changes nothing and
+    /// returns null when there is no real mic to move to.
     /// </summary>
     public static string? KeepStereo()
     {
+        using var en = new MMDeviceEnumerator();
+        var mic = en.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active)
+            .FirstOrDefault(d => !d.FriendlyName.Contains(NameMatch, StringComparison.OrdinalIgnoreCase) && !IsVirtual(d.FriendlyName));
+        if (mic is null) return null;
+
         var policy = (IPolicyConfig)new PolicyConfigClient();
         var stereo = Endpoints(DataFlow.Render, DeviceState.Active).FirstOrDefault(e => !IsHandsFree(e));
         if (stereo is not null)
             for (int role = 0; role < 3; role++) policy.SetDefaultEndpoint(stereo.ID, role);
-
-        using var en = new MMDeviceEnumerator();
-        var mic = en.EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active)
-            .FirstOrDefault(d => !d.FriendlyName.Contains(NameMatch, StringComparison.OrdinalIgnoreCase));
-        if (mic is null) return null;
         for (int role = 0; role < 3; role++) policy.SetDefaultEndpoint(mic.ID, role);
+        return mic.FriendlyName;
+    }
+
+    /// <summary>Put the AirPods mic back as default for every capture role (used to undo the old behaviour).</summary>
+    public static string? UseAirPodsMic()
+    {
+        var mic = Endpoints(DataFlow.Capture, DeviceState.Active).FirstOrDefault();
+        if (mic is null) return null;
+        var policy = (IPolicyConfig)new PolicyConfigClient();
+        for (int role = 0; role < 3; role++) policy.SetDefaultEndpoint(mic.ID, role);
+        var handsFree = Endpoints(DataFlow.Render, DeviceState.Active).FirstOrDefault(IsHandsFree);
+        if (handsFree is not null) policy.SetDefaultEndpoint(handsFree.ID, 2 /* communications */);
         return mic.FriendlyName;
     }
 

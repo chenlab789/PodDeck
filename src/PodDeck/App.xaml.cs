@@ -26,6 +26,19 @@ public partial class App : Application
         _settings = Settings.Load();
         BtAudio.NameMatch = _settings.DeviceName;
 
+        if (e.Args.Contains("--fix-mic"))
+        {
+            // Undo v0.1.0's Keep Stereo, which could pick a silent virtual mic.
+            _settings.KeepStereo = false;
+            _settings.DefaultsBeforeKeepStereo = null;
+            _settings.Save();
+            string? mic = null;
+            try { mic = BtAudio.UseAirPodsMic(); } catch (Exception ex) { mic = "error " + ex.Message; }
+            System.IO.File.WriteAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "poddeck-fixmic.txt"), mic ?? "no AirPods mic active");
+            Shutdown();
+            return;
+        }
+
         if (e.Args.Contains("--diag"))
         {
             var log = new System.Text.StringBuilder();
@@ -38,7 +51,11 @@ public partial class App : Application
                 using (var en = new NAudio.CoreAudioApi.MMDeviceEnumerator())
                     foreach (var d in en.EnumerateAudioEndPoints(NAudio.CoreAudioApi.DataFlow.All, NAudio.CoreAudioApi.DeviceState.All))
                         try { log.AppendLine($"[all] {d.DataFlow} {d.State} '{d.FriendlyName}'"); } catch (Exception ex) { log.AppendLine($"[all] ? {ex.Message}"); }
-                log.AppendLine($"Connect() => {BtAudio.Connect()}");
+                using (var en = new NAudio.CoreAudioApi.MMDeviceEnumerator())
+                    foreach (var flow in new[] { NAudio.CoreAudioApi.DataFlow.Render, NAudio.CoreAudioApi.DataFlow.Capture })
+                        foreach (var role in new[] { NAudio.CoreAudioApi.Role.Console, NAudio.CoreAudioApi.Role.Communications })
+                            try { log.AppendLine($"[default] {flow} {role}: {en.GetDefaultAudioEndpoint(flow, role).FriendlyName}"); } catch { }
+                if (!e.Args.Contains("--no-connect")) log.AppendLine($"Connect() => {BtAudio.Connect()}");
             }
             catch (Exception ex) { log.AppendLine("FATAL " + ex); }
             System.IO.File.WriteAllText(path, log.ToString());
@@ -51,7 +68,7 @@ public partial class App : Application
 
         _panel = new TrayPanel(_settings);
         _panel.ConnectToggle += ToggleConnection;
-        _panel.KeepStereoTurnedOn += ApplyKeepStereo;
+        _panel.KeepStereoToggleRequested += ToggleKeepStereo;
         _panel.QuitRequested += Quit;
 
         _tray = new Forms.NotifyIcon { Icon = MakeTrayIcon(), Text = "PodDeck", Visible = true };
@@ -152,15 +169,43 @@ public partial class App : Application
             Task.Delay(4000).ContinueWith(_ => Ui(ApplyKeepStereo));
     }
 
+    void ToggleKeepStereo()
+    {
+        try
+        {
+            if (!_settings.KeepStereo)
+            {
+                if (BtAudio.FindRealOtherMic() is null)
+                {
+                    _tray.ShowBalloonTip(5000, "Keep Stereo needs another mic",
+                        "No microphone other than AirPods was found (virtual mics like NVIDIA Broadcast don't count). Nothing was changed.",
+                        Forms.ToolTipIcon.Info);
+                    return;
+                }
+                _settings.DefaultsBeforeKeepStereo = BtAudio.SnapshotDefaults();
+                _settings.KeepStereo = true;
+                _settings.Save();
+                ApplyKeepStereo();
+            }
+            else
+            {
+                _settings.KeepStereo = false;
+                if (_settings.DefaultsBeforeKeepStereo is { } snap) BtAudio.RestoreDefaults(snap);
+                _settings.DefaultsBeforeKeepStereo = null;
+                _settings.Save();
+            }
+        }
+        catch (Exception ex) { Log.Write("keep stereo error " + ex.Message); }
+    }
+
     void ApplyKeepStereo()
     {
         try
         {
             var mic = BtAudio.KeepStereo();
-            if (mic is null)
-                _tray.ShowBalloonTip(3000, "Keep Stereo", "No other microphone found, AirPods mic stays default.", Forms.ToolTipIcon.Info);
+            Log.Write("keep stereo -> " + (mic ?? "no real mic, unchanged"));
         }
-        catch { /* audio service busy */ }
+        catch (Exception ex) { Log.Write("keep stereo error " + ex.Message); }
     }
 
     static bool SafeIsConnected()
