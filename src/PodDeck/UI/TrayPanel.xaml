@@ -5,115 +5,109 @@
         Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
         SizeToContent="WidthAndHeight" FontFamily="{StaticResource UiFont}">
     <Window.Resources>
-        <Style x:Key="Tile" TargetType="Border">
-            <Setter Property="CornerRadius" Value="18"/>
-            <Setter Property="Background" Value="#14FFFFFF"/>
+        <!-- A full-width row button with a hairline on top -->
+        <Style x:Key="Row" TargetType="Button" BasedOn="{StaticResource FlatButton}">
+            <Setter Property="Tag" Value="0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="{StaticResource InkLine}"/>
+            <Setter Property="BorderThickness" Value="0,1,0,0"/>
+            <Setter Property="MinHeight" Value="42"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         </Style>
-        <Style x:Key="Muted" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="#99F5F5F7"/>
-            <Setter Property="FontSize" Value="11"/>
+        <Style x:Key="RowText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="Foreground" Value="{StaticResource InkFg}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
     </Window.Resources>
     <Grid Margin="24">
-        <Border Width="340" CornerRadius="26" Background="#F228282C" BorderBrush="#24FFFFFF" BorderThickness="0.5" Padding="12">
+        <Border Width="290" CornerRadius="20" Background="{StaticResource InkBg}" BorderBrush="{StaticResource InkBorder}"
+                BorderThickness="1" Padding="18,16,18,16">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="40" ShadowDepth="10" Direction="270" Opacity="0.4" Color="#000000"/>
+                <DropShadowEffect BlurRadius="40" ShadowDepth="10" Direction="270" Opacity="0.45" Color="#000000"/>
             </Border.Effect>
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition/>
-                    <ColumnDefinition Width="10"/>
-                    <ColumnDefinition/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="10"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="10"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="10"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="10"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
+            <StackPanel>
+                <DockPanel Margin="0,0,0,12">
+                    <TextBlock x:Name="ConnText" DockPanel.Dock="Right" FontSize="11" VerticalAlignment="Bottom"/>
+                    <TextBlock x:Name="NameText" Text="AirPods" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource InkFg}"/>
+                </DockPanel>
 
-                <!-- Battery tile -->
-                <Border Grid.ColumnSpan="3" Style="{StaticResource Tile}" Padding="16,14">
+                <Border BorderBrush="{StaticResource InkLine}" BorderThickness="0,1,0,0" Padding="0,10">
+                    <Grid x:Name="BatRow">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                </Border>
+
+                <Button x:Name="PauseRow" Style="{StaticResource Row}" Click="PauseRow_Click"
+                        ToolTip="Pauses media when you take AirPods out. Taking both out pauses in about 3-5 s; one pod alone can take 10-20 s (AirPods report the second pod slowly over Bluetooth LE).">
                     <DockPanel>
-                        <Path Data="{StaticResource PodsGlyph}" Fill="#F5F5F7" Width="40" Height="40" Stretch="Uniform" VerticalAlignment="Top" Margin="0,2,14,0"/>
-                        <StackPanel>
-                            <DockPanel>
-                                <TextBlock x:Name="ConnText" DockPanel.Dock="Right" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
-                                <TextBlock x:Name="NameText" Text="AirPods" FontSize="14" FontWeight="SemiBold" Foreground="#F5F5F7"/>
-                            </DockPanel>
-                            <StackPanel x:Name="Bars" Margin="0,8,0,0"/>
-                        </StackPanel>
+                        <Border x:Name="PauseSw" DockPanel.Dock="Right" Width="32" Height="18" CornerRadius="9" Padding="2" VerticalAlignment="Center">
+                            <Ellipse x:Name="PauseKnob" Width="14" Height="14" Fill="White"/>
+                        </Border>
+                        <TextBlock Text="Pause on Remove" Style="{StaticResource RowText}"/>
+                    </DockPanel>
+                </Button>
+
+                <Button x:Name="HudRow" Style="{StaticResource Row}" Click="HudRow_Click"
+                        ToolTip="Small battery strip on the right edge of the screen">
+                    <DockPanel>
+                        <Border x:Name="HudSw" DockPanel.Dock="Right" Width="32" Height="18" CornerRadius="9" Padding="2" VerticalAlignment="Center">
+                            <Ellipse x:Name="HudKnob" Width="14" Height="14" Fill="White"/>
+                        </Border>
+                        <TextBlock Text="Status HUD" Style="{StaticResource RowText}"/>
+                    </DockPanel>
+                </Button>
+
+                <Button x:Name="StereoRow" Style="{StaticResource Row}" Click="StereoRow_Click"
+                        ToolTip="Keep AirPods in stereo and talk through another real microphone">
+                    <DockPanel>
+                        <Border x:Name="StereoSw" DockPanel.Dock="Right" Width="32" Height="18" CornerRadius="9" Padding="2" VerticalAlignment="Center">
+                            <Ellipse x:Name="StereoKnob" Width="14" Height="14" Fill="White"/>
+                        </Border>
+                        <TextBlock Text="Keep Stereo" Style="{StaticResource RowText}"/>
+                    </DockPanel>
+                </Button>
+
+                <Border BorderBrush="{StaticResource InkLine}" BorderThickness="0,1,0,0" MinHeight="42">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Text="soon" FontSize="12" Foreground="{StaticResource InkMuted}" VerticalAlignment="Center"/>
+                        <TextBlock Text="Noise control" FontSize="12.5" Foreground="{StaticResource InkMuted}" VerticalAlignment="Center"/>
                     </DockPanel>
                 </Border>
 
-                <!-- Noise control (needs the AAP channel; phase 3) -->
-                <Border Grid.Row="2" Grid.RowSpan="3" Style="{StaticResource Tile}" Padding="8">
+                <Border BorderBrush="{StaticResource InkLine}" BorderThickness="0,1,0,0" Padding="0,10,0,8">
                     <StackPanel>
-                        <DockPanel Margin="8,4,8,6">
-                            <TextBlock DockPanel.Dock="Right" Text="soon" Style="{StaticResource Muted}"/>
-                            <TextBlock Text="Noise Control" FontSize="12" FontWeight="SemiBold" Foreground="#F5F5F7"/>
+                        <DockPanel>
+                            <TextBlock x:Name="VolText" DockPanel.Dock="Right" FontSize="12" Foreground="{StaticResource InkMuted}"/>
+                            <TextBlock Text="Volume" Style="{StaticResource RowText}"/>
                         </DockPanel>
-                        <StackPanel x:Name="Modes" IsEnabled="False"/>
-                    </StackPanel>
-                </Border>
-
-                <Button x:Name="PauseTile" Grid.Row="2" Grid.Column="2" Style="{StaticResource FlatButton}" Tag="18"
-                        Background="#14FFFFFF" Padding="12,14,12,12" HorizontalContentAlignment="Left" Click="PauseTile_Click"
-                        ToolTip="Pauses media when you take AirPods out. Taking both out pauses in about 3-5 s; one pod alone can take 10-20 s (AirPods report the second pod slowly over Bluetooth LE).">
-                    <StackPanel>
-                        <Border x:Name="PauseDot" Width="34" Height="34" CornerRadius="17" HorizontalAlignment="Left">
-                            <Ellipse x:Name="PauseDotIn" Width="12" Height="12"/>
-                        </Border>
-                        <TextBlock Text="Pause on Remove" FontSize="12" FontWeight="SemiBold" Foreground="#F5F5F7" Margin="0,10,0,0"/>
-                        <TextBlock x:Name="PauseState" Style="{StaticResource Muted}" Margin="0,2,0,0"/>
-                    </StackPanel>
-                </Button>
-
-                <Button x:Name="StereoTile" Grid.Row="4" Grid.Column="2" Style="{StaticResource FlatButton}" Tag="18"
-                        Background="#14FFFFFF" Padding="12,14,12,12" HorizontalContentAlignment="Left" Click="StereoTile_Click"
-                        ToolTip="Keep AirPods in stereo and use the PC microphone instead">
-                    <StackPanel>
-                        <Border x:Name="StereoDot" Width="34" Height="34" CornerRadius="17" HorizontalAlignment="Left">
-                            <Ellipse x:Name="StereoDotIn" Width="12" Height="12"/>
-                        </Border>
-                        <TextBlock Text="Keep Stereo" FontSize="12" FontWeight="SemiBold" Foreground="#F5F5F7" Margin="0,10,0,0"/>
-                        <TextBlock x:Name="StereoState" Style="{StaticResource Muted}" Margin="0,2,0,0"/>
-                    </StackPanel>
-                </Button>
-
-                <!-- Volume -->
-                <Border Grid.Row="6" Grid.ColumnSpan="3" Style="{StaticResource Tile}" Padding="14,12">
-                    <StackPanel>
-                        <DockPanel Margin="0,0,0,10">
-                            <TextBlock x:Name="VolText" DockPanel.Dock="Right" Style="{StaticResource Muted}" FontSize="12"/>
-                            <TextBlock Text="Volume" FontSize="12" FontWeight="SemiBold" Foreground="#F5F5F7"/>
-                        </DockPanel>
-                        <Border x:Name="VolBar" Height="26" CornerRadius="13" Background="#24FFFFFF" Cursor="Hand">
-                            <Border x:Name="VolFill" HorizontalAlignment="Left" Width="0" CornerRadius="13" Background="#F5F5F7" IsHitTestVisible="False"/>
+                        <!-- Tall transparent hit area, thin visual line -->
+                        <Border x:Name="VolBar" Height="20" Background="Transparent" Cursor="Hand" Margin="0,4,0,0">
+                            <Grid VerticalAlignment="Center">
+                                <Border Height="4" CornerRadius="2" Background="{StaticResource InkBorder}"/>
+                                <Border x:Name="VolFill" Height="4" CornerRadius="2" Background="{StaticResource InkFg}"
+                                        HorizontalAlignment="Left" Width="0" IsHitTestVisible="False"/>
+                            </Grid>
                         </Border>
                     </StackPanel>
                 </Border>
 
-                <!-- Actions -->
-                <Grid Grid.Row="8" Grid.ColumnSpan="3">
+                <Grid Margin="0,6,0,0">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition/>
-                        <ColumnDefinition Width="8"/>
-                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Button x:Name="ConnBtn" Style="{StaticResource FlatButton}" Tag="12" Height="38" Background="#14FFFFFF" Click="ConnBtn_Click">
-                        <TextBlock x:Name="ConnBtnText" Text="Use on this PC" FontSize="12.5" FontWeight="SemiBold" Foreground="#F5F5F7"/>
+                    <Button x:Name="ConnBtn" Style="{StaticResource FlatButton}" Tag="10" Height="34" Background="Transparent"
+                            BorderBrush="{StaticResource InkOutline}" BorderThickness="1" Click="ConnBtn_Click">
+                        <TextBlock x:Name="ConnBtnText" Text="Use on this PC" FontSize="12" Foreground="{StaticResource InkFg}"/>
                     </Button>
-                    <Button Grid.Column="2" Style="{StaticResource FlatButton}" Tag="12" Height="38" Padding="16,0" Background="#14FFFFFF" Click="Quit_Click">
-                        <TextBlock Text="Quit" FontSize="12.5" Foreground="#99F5F5F7"/>
+                    <Button Grid.Column="2" Style="{StaticResource FlatButton}" Tag="10" Height="34" Padding="14,0" Background="Transparent"
+                            BorderBrush="{StaticResource InkOutline}" BorderThickness="1" Click="Quit_Click">
+                        <TextBlock Text="Quit" FontSize="12" Foreground="{StaticResource InkMuted}"/>
                     </Button>
                 </Grid>
-            </Grid>
+            </StackPanel>
         </Border>
     </Grid>
 </Window>

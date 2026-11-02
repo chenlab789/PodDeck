@@ -102,15 +102,16 @@ public partial class App : Application
         _panel.ConnectToggle += ToggleConnection;
         _panel.KeepStereoToggleRequested += ToggleKeepStereo;
         _panel.QuitRequested += Quit;
+        _panel.HudToggled += ApplyHud;
+
+        _hud = new StatusHud(_settings);
+        _hud.Clicked += TogglePanel;
+        _hudTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+        _hudTimer.Tick += (_, _) => { if (_hud.IsVisible) _hud.Update(_watcher.Current, SafeIsConnected()); };
+        _hudTimer.Start();
 
         _tray = new Forms.NotifyIcon { Icon = MakeTrayIcon(), Text = "PodDeck", Visible = true };
-        _tray.MouseClick += (_, a) =>
-        {
-            if (a.Button != Forms.MouseButtons.Left) return;
-            if (_panel.IsVisible || _panel.JustHidden) { _panel.Hide(); return; }
-            _panel.Update(_watcher.Current, SafeIsConnected());
-            _panel.ShowAtTray();
-        };
+        _tray.MouseClick += (_, a) => { if (a.Button == Forms.MouseButtons.Left) TogglePanel(); };
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("Show battery", null, (_, _) => ShowOverlay());
         menu.Items.Add("Live monitor", null, (_, _) => OpenLive());
@@ -131,6 +132,7 @@ public partial class App : Application
 
         if (_settings.KeepStereo) ApplyKeepStereo();
         if (e.Args.Contains("--live")) OpenLive();
+        ApplyHud();
 
         if (e.Args.Contains("--demo"))
         {
@@ -147,6 +149,7 @@ public partial class App : Application
         bool connected = SafeIsConnected();
         if (_overlay.IsVisible) _overlay.Update(s, connected);
         if (_panel.IsVisible) _panel.Update(s, connected);
+        if (_hud.IsVisible) _hud.Update(s, connected);
 
         string line = $"L {Visuals.Pct(s.Left)}  R {Visuals.Pct(s.Right)}  Case {Visuals.Pct(s.Case)}";
         _tray.Text = line.Length > 63 ? line[..63] : line;
@@ -179,6 +182,25 @@ public partial class App : Application
     }
 
     LiveMonitor? _live;
+    StatusHud _hud = null!;
+    System.Windows.Threading.DispatcherTimer _hudTimer = null!;
+
+    void TogglePanel()
+    {
+        if (_panel.IsVisible || _panel.JustHidden) { _panel.Hide(); return; }
+        _panel.Update(_watcher.Current, SafeIsConnected());
+        _panel.ShowAtTray();
+    }
+
+    void ApplyHud()
+    {
+        if (_settings.ShowStatusHud)
+        {
+            _hud.Update(_watcher.Current, SafeIsConnected());
+            _hud.Place();
+        }
+        else _hud.Hide();
+    }
 
     void OpenLive()
     {

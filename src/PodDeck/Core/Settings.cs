@@ -8,6 +8,9 @@ public sealed class Settings
     public bool PauseOnRemove { get; set; } = true;
     public bool KeepStereo { get; set; } = false;
     public bool ShowLidOverlay { get; set; } = true;
+    public bool ShowStatusHud { get; set; } = true;
+    /// <summary>HUD vertical position as a fraction of the work area height (user can drag it).</summary>
+    public double HudTop { get; set; } = 0.32;
     public bool LowBatteryWarning { get; set; } = true;
     public int LowBatteryLevel { get; set; } = 20;
     public string DeviceName { get; set; } = "AirPods";

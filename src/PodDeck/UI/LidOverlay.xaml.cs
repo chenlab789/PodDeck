@@ -1,18 +1,13 @@
 using System.Windows;
-using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using PodDeck.Core;
 
 namespace PodDeck.UI;
 
-/// <summary>Design A: light glass card that pops up when the case lid opens.</summary>
+/// <summary>Ink-theme card that pops up when the case lid opens.</summary>
 public partial class LidOverlay : Window
 {
-    static readonly Brush Text = new SolidColorBrush(Color.FromRgb(0x1D, 0x1D, 0x1F));
-    static readonly Brush Muted = new SolidColorBrush(Color.FromRgb(0x6E, 0x6E, 0x73));
-    static readonly Brush Track = new SolidColorBrush(Color.FromArgb(0x14, 0, 0, 0));
-
     readonly DispatcherTimer _hide = new() { Interval = TimeSpan.FromSeconds(8) };
     public Func<int> LowLevel { get; set; } = () => 20;
     public event Action? ActionRequested;
@@ -27,12 +22,13 @@ public partial class LidOverlay : Window
     public void Update(PodState s, bool connected)
     {
         NameText.Text = s.ModelName;
-        StatusText.Text = connected ? "Connected" : "Not connected to this PC";
+        StatusText.Text = connected ? "Connected" : "Not connected";
+        Dot.Fill = connected ? Visuals.Green : Visuals.Muted;
         ActionText.Text = connected ? "Hand off to iPhone" : "Use on this PC";
         int low = LowLevel();
-        Visuals.FillRing(LeftCol, "Left", s.Left, s.LeftCharging, low, Text, Muted, Track);
-        Visuals.FillRing(RightCol, "Right", s.Right, s.RightCharging, low, Text, Muted, Track);
-        Visuals.FillRing(CaseCol, "Case", s.Case, s.CaseCharging, low, Text, Muted, Track);
+        Visuals.FillBig(LeftCol, "Left", s.Left, s.LeftCharging, low);
+        Visuals.FillBig(RightCol, "Right", s.Right, s.RightCharging, low);
+        Visuals.FillBig(CaseCol, "Case", s.Case, s.CaseCharging, low);
     }
 
     public void Pop()

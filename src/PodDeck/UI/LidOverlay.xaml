@@ -5,35 +5,40 @@
         Topmost="True" ShowInTaskbar="False" ShowActivated="False" ResizeMode="NoResize"
         SizeToContent="WidthAndHeight" FontFamily="{StaticResource UiFont}" Opacity="0">
     <Grid Margin="30">
-        <Border x:Name="Card" Width="380" CornerRadius="30" Background="#F7FAFAFC" Padding="24,28,24,22">
+        <Border Width="440" CornerRadius="22" Background="{StaticResource InkBg}" BorderBrush="{StaticResource InkBorder}"
+                BorderThickness="1" Padding="26,22">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="40" ShadowDepth="10" Direction="270" Opacity="0.22" Color="#000000"/>
+                <DropShadowEffect BlurRadius="40" ShadowDepth="10" Direction="270" Opacity="0.45" Color="#000000"/>
             </Border.Effect>
-            <Grid>
-                <Button x:Name="CloseBtn" Style="{StaticResource FlatButton}" Tag="15" Width="30" Height="30"
-                        Background="#0F000000" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-12,-8,0"
-                        ToolTip="Close" Click="CloseBtn_Click">
-                    <Path Data="M1.5,1.5 L8.5,8.5 M8.5,1.5 L1.5,8.5" Stroke="#6E6E73" StrokeThickness="1.6"
-                          StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="10" Height="10"/>
+            <StackPanel>
+                <DockPanel>
+                    <Path Data="{StaticResource PodsGlyph}" Fill="{StaticResource InkFg}" Width="46" Height="46"
+                          Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,22,0"/>
+                    <StackPanel>
+                        <DockPanel>
+                            <Button x:Name="CloseBtn" DockPanel.Dock="Right" Style="{StaticResource FlatButton}" Tag="12"
+                                    Width="24" Height="24" Background="Transparent" ToolTip="Close" Click="CloseBtn_Click">
+                                <Path Data="M1.5,1.5 L8.5,8.5 M8.5,1.5 L1.5,8.5" Stroke="{StaticResource InkMuted}" StrokeThickness="1.4"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="10" Height="10"/>
+                            </Button>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock x:Name="NameText" Text="AirPods" FontSize="13" FontWeight="Medium" Foreground="{StaticResource InkFg}"/>
+                                <Ellipse x:Name="Dot" Width="5" Height="5" Margin="8,1,8,0" Fill="{StaticResource Green}" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="StatusText" Text="Connected" FontSize="12" Foreground="{StaticResource InkMuted}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </DockPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <StackPanel x:Name="LeftCol" Margin="0,0,24,0"/>
+                            <StackPanel x:Name="RightCol" Margin="0,0,24,0"/>
+                            <StackPanel x:Name="CaseCol"/>
+                        </StackPanel>
+                    </StackPanel>
+                </DockPanel>
+                <Button x:Name="ActionBtn" Style="{StaticResource FlatButton}" Tag="10" Height="34" Margin="0,18,0,0"
+                        Background="Transparent" BorderBrush="{StaticResource InkOutline}" BorderThickness="1" Click="ActionBtn_Click">
+                    <TextBlock x:Name="ActionText" Text="Use on this PC" FontSize="12" Foreground="{StaticResource InkFg}"/>
                 </Button>
-                <StackPanel>
-                    <TextBlock x:Name="NameText" Text="AirPods" FontFamily="{StaticResource UiFontDisplay}" FontSize="19"
-                               FontWeight="SemiBold" Foreground="#1D1D1F" HorizontalAlignment="Center"/>
-                    <TextBlock x:Name="StatusText" Text="Connected" FontSize="13" Foreground="#6E6E73"
-                               HorizontalAlignment="Center" Margin="0,4,0,0"/>
-
-                    <UniformGrid Columns="3" Margin="0,22,0,0">
-                        <StackPanel x:Name="LeftCol" HorizontalAlignment="Center"/>
-                        <StackPanel x:Name="RightCol" HorizontalAlignment="Center"/>
-                        <StackPanel x:Name="CaseCol" HorizontalAlignment="Center"/>
-                    </UniformGrid>
-
-                    <Button x:Name="ActionBtn" Style="{StaticResource FlatButton}" Tag="12" Height="40" Margin="0,22,0,0"
-                            Background="#0F000000" Click="ActionBtn_Click">
-                        <TextBlock x:Name="ActionText" Text="Use on this PC" FontSize="13" FontWeight="SemiBold" Foreground="#1D1D1F"/>
-                    </Button>
-                </StackPanel>
-            </Grid>
+            </StackPanel>
         </Border>
     </Grid>
 </Window>

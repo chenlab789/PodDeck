@@ -6,7 +6,14 @@
         <FontFamily x:Key="UiFont">Segoe UI Variable Text, Segoe UI</FontFamily>
         <FontFamily x:Key="UiFontDisplay">Segoe UI Variable Display, Segoe UI</FontFamily>
 
-        <SolidColorBrush x:Key="Green" Color="#34C759"/>
+        <!-- Ink theme -->
+        <SolidColorBrush x:Key="InkBg" Color="#0B0B0C"/>
+        <SolidColorBrush x:Key="InkBorder" Color="#222222"/>
+        <SolidColorBrush x:Key="InkLine" Color="#1C1C1E"/>
+        <SolidColorBrush x:Key="InkFg" Color="#F5F5F7"/>
+        <SolidColorBrush x:Key="InkMuted" Color="#8E8E93"/>
+        <SolidColorBrush x:Key="InkOutline" Color="#2C2C2E"/>
+        <SolidColorBrush x:Key="Green" Color="#30D158"/>
         <SolidColorBrush x:Key="Orange" Color="#FF9F0A"/>
 
         <!-- Earbuds glyph, 44x44 design grid -->
@@ -26,6 +33,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="b" Background="{TemplateBinding Background}" CornerRadius="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, TargetNullValue=12}"
+                                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
