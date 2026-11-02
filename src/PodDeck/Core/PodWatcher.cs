@@ -24,6 +24,8 @@ public sealed class PodWatcher : IDisposable
     public PodState? Current { get { lock (_lock) return _current; } }
     public bool Present { get { lock (_lock) return _present; } }
 
+    /// <summary>Fires for every decoded advertisement (for the live monitor).</summary>
+    public event Action<PodState>? Advert;
     /// <summary>Fires on every decoded change of battery / ear / lid state.</summary>
     public event Action<PodState>? StateChanged;
     /// <summary>Case lid went from closed (or silent) to open.</summary>
@@ -76,6 +78,7 @@ public sealed class PodWatcher : IDisposable
                 Log.Write($"adv status=0x{s.Status:X2} lid=0x{s.LidByte:X2} inEar={s.InEarCount} inCase={s.InCase} L={s.Left} R={s.Right} C={s.Case} rssi={s.Rssi}");
             _current = s;
         }
+        Advert?.Invoke(s);
         if (fireChange) StateChanged?.Invoke(s);
         if (fireLidOpen) LidOpened?.Invoke(s);
         if (fireLidClosed) LidClosed?.Invoke();

@@ -81,6 +81,7 @@ public partial class App : Application
         };
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("Show battery", null, (_, _) => ShowOverlay());
+        menu.Items.Add("Live monitor", null, (_, _) => OpenLive());
         menu.Items.Add("Quit PodDeck", null, (_, _) => Quit());
         _tray.ContextMenuStrip = menu;
 
@@ -89,6 +90,7 @@ public partial class App : Application
         _hotkeys.Register(Hotkeys.MOD_CONTROL | Hotkeys.MOD_ALT, 0x50 /* P */, ShowOverlay);
 
         _watcher = new PodWatcher();
+        _watcher.Advert += s => Ui(() => _live?.OnAdvert(s));
         _watcher.StateChanged += s => Ui(() => OnState(s));
         _watcher.LidOpened += s => Ui(() => { if (_settings.ShowLidOverlay) { _overlay.Update(s, SafeIsConnected()); _overlay.Pop(); } });
         _watcher.LidClosed += () => Ui(() => _overlay.FadeOut());
@@ -96,6 +98,7 @@ public partial class App : Application
         _watcher.Start();
 
         if (_settings.KeepStereo) ApplyKeepStereo();
+        if (e.Args.Contains("--live")) OpenLive();
 
         if (e.Args.Contains("--demo"))
         {
@@ -135,10 +138,23 @@ public partial class App : Application
         if (!_settings.PauseOnRemove || !connected) return;
         try
         {
-            if (after < before) Log.Write("pause: " + await Media.PauseIfPlaying());
-            else if (after > before) Log.Write("resume: " + await Media.ResumeIfWePaused());
+            string? r = null;
+            if (after < before) r = "pause: " + await Media.PauseIfPlaying();
+            else if (after > before) r = "resume: " + await Media.ResumeIfWePaused();
+            if (r is not null) { Log.Write(r); _live?.OnAction(r); }
         }
         catch (Exception ex) { Log.Write("media error " + ex.Message); }
+    }
+
+    LiveMonitor? _live;
+
+    void OpenLive()
+    {
+        if (_live is not null) { _live.Activate(); return; }
+        _live = new LiveMonitor();
+        _live.Closed += (_, _) => _live = null;
+        _live.Show();
+        _live.Activate();
     }
 
     void ShowOverlay()

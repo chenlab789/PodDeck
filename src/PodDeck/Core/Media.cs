@@ -22,9 +22,13 @@ public static class Media
         foreach (var s in sessions)
         {
             var st = s.GetPlaybackInfo().PlaybackStatus;
-            notes.Add($"{s.SourceAppUserModelId}={st}");
-            if (st == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing && await s.TryPauseAsync())
-                _pausedByUs.Add(s.SourceAppUserModelId);
+            if (st == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
+            {
+                bool ok = await s.TryPauseAsync();
+                notes.Add($"{s.SourceAppUserModelId} playing → pause {(ok ? "OK" : "REFUSED")}");
+                if (ok) _pausedByUs.Add(s.SourceAppUserModelId);
+            }
+            else notes.Add($"{s.SourceAppUserModelId}={st}");
         }
         return sessions.Count == 0 ? "no media sessions" : string.Join(", ", notes);
     }
