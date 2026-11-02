@@ -18,7 +18,7 @@ const FFMPEG = 'D:/ClipCut/bin/ffmpeg.exe';
   const browser = await puppeteer.launch({ executablePath: CHROME, headless: 'new', args: ['--force-device-scale-factor=1'] });
   const page = await browser.newPage();
   await page.setViewport({ width: +w, height: +h, deviceScaleFactor: 1 });
-  const url = 'file:///' + path.resolve(__dirname, 'motion.html').replace(/\\/g, '/') + `?w=${w}&h=${h}&part=${part}&static=1`;
+  const url = 'file:///' + path.resolve(__dirname, (process.env.MOTION || 'motion.html')).replace(/\\/g, '/') + `?w=${w}&h=${h}&part=${part}&static=1`;
   await page.goto(url);
   await page.evaluate(() => document.fonts.ready);
   const total = await page.evaluate(() => window.TOTAL);
@@ -41,3 +41,4 @@ const FFMPEG = 'D:/ClipCut/bin/ffmpeg.exe';
     console.log('wrote', mp4, 'total', total, 's');
   } else console.log('preview frames', times.length);
 })();
+
