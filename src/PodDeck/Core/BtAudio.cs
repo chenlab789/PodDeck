@@ -102,16 +102,26 @@ public static class BtAudio
 
     // ---------- volume ----------
 
+    // Enumerating every endpoint is slow on machines with many audio devices, so the
+    // AirPods stereo endpoint is looked up once (on GetVolume) and reused while dragging.
+    static MMDevice? _volEp;
+
     public static float? GetVolume()
     {
-        var ep = Endpoints(DataFlow.Render, DeviceState.Active).FirstOrDefault(e => !IsHandsFree(e));
-        return ep?.AudioEndpointVolume.MasterVolumeLevelScalar;
+        _volEp = Endpoints(DataFlow.Render, DeviceState.Active).FirstOrDefault(e => !IsHandsFree(e));
+        try { return _volEp?.AudioEndpointVolume.MasterVolumeLevelScalar; }
+        catch { _volEp = null; return null; }
     }
 
     public static void SetVolume(float v)
     {
-        foreach (var ep in Endpoints(DataFlow.Render, DeviceState.Active))
-            ep.AudioEndpointVolume.MasterVolumeLevelScalar = Math.Clamp(v, 0f, 1f);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        try { _volEp ??= Endpoints(DataFlow.Render, DeviceState.Active).FirstOrDefault(e => !IsHandsFree(e)); }
+        catch { _volEp = null; }
+        if (_volEp is null) return;
+        try { _volEp.AudioEndpointVolume.MasterVolumeLevelScalar = Math.Clamp(v, 0f, 1f); }
+        catch { _volEp = null; }
+        if (sw.ElapsedMilliseconds > 30) PodDeck.Core.Log.Write($"SetVolume slow: {sw.ElapsedMilliseconds} ms");
     }
 
     static bool IsHandsFree(MMDevice d) =>
