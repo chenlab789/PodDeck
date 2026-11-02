@@ -1,0 +1,117 @@
+<Window x:Class="PodDeck.UI.TrayPanel"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="PodDeck" WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="False" ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight" FontFamily="{StaticResource UiFont}">
+    <Window.Resources>
+        <Style x:Key="Tile" TargetType="Border">
+            <Setter Property="CornerRadius" Value="18"/>
+            <Setter Property="Background" Value="#14FFFFFF"/>
+        </Style>
+        <Style x:Key="Muted" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#99F5F5F7"/>
+            <Setter Property="FontSize" Value="11"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="24">
+        <Border Width="340" CornerRadius="26" Background="#F228282C" BorderBrush="#24FFFFFF" BorderThickness="0.5" Padding="12">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="40" ShadowDepth="10" Direction="270" Opacity="0.4" Color="#000000"/>
+            </Border.Effect>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="10"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Battery tile -->
+                <Border Grid.ColumnSpan="3" Style="{StaticResource Tile}" Padding="16,14">
+                    <DockPanel>
+                        <Path Data="{StaticResource PodsGlyph}" Fill="#F5F5F7" Width="40" Height="40" Stretch="Uniform" VerticalAlignment="Top" Margin="0,2,14,0"/>
+                        <StackPanel>
+                            <DockPanel>
+                                <TextBlock x:Name="ConnText" DockPanel.Dock="Right" Style="{StaticResource Muted}" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="NameText" Text="AirPods" FontSize="14" FontWeight="SemiBold" Foreground="#F5F5F7"/>
+                            </DockPanel>
+                            <StackPanel x:Name="Bars" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- Noise control (needs the AAP channel; phase 3) -->
+                <Border Grid.Row="2" Grid.RowSpan="3" Style="{StaticResource Tile}" Padding="8">
+                    <StackPanel>
+                        <DockPanel Margin="8,4,8,6">
+                            <TextBlock DockPanel.Dock="Right" Text="soon" Style="{StaticResource Muted}"/>
+                            <TextBlock Text="Noise Control" FontSize="12" FontWeight="SemiBold" Foreground="#F5F5F7"/>
+                        </DockPanel>
+                        <StackPanel x:Name="Modes" IsEnabled="False"/>
+                    </StackPanel>
+                </Border>
+
+                <Button x:Name="PauseTile" Grid.Row="2" Grid.Column="2" Style="{StaticResource FlatButton}" Tag="18"
+                        Background="#14FFFFFF" Padding="12,14,12,12" HorizontalContentAlignment="Left" Click="PauseTile_Click"
+                        ToolTip="Pause media when you take an AirPod out">
+                    <StackPanel>
+                        <Border x:Name="PauseDot" Width="34" Height="34" CornerRadius="17" HorizontalAlignment="Left">
+                            <Ellipse x:Name="PauseDotIn" Width="12" Height="12"/>
+                        </Border>
+                        <TextBlock Text="Pause on Remove" FontSize="12" FontWeight="SemiBold" Foreground="#F5F5F7" Margin="0,10,0,0"/>
+                        <TextBlock x:Name="PauseState" Style="{StaticResource Muted}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <Button x:Name="StereoTile" Grid.Row="4" Grid.Column="2" Style="{StaticResource FlatButton}" Tag="18"
+                        Background="#14FFFFFF" Padding="12,14,12,12" HorizontalContentAlignment="Left" Click="StereoTile_Click"
+                        ToolTip="Keep AirPods in stereo and use the PC microphone instead">
+                    <StackPanel>
+                        <Border x:Name="StereoDot" Width="34" Height="34" CornerRadius="17" HorizontalAlignment="Left">
+                            <Ellipse x:Name="StereoDotIn" Width="12" Height="12"/>
+                        </Border>
+                        <TextBlock Text="Keep Stereo" FontSize="12" FontWeight="SemiBold" Foreground="#F5F5F7" Margin="0,10,0,0"/>
+                        <TextBlock x:Name="StereoState" Style="{StaticResource Muted}" Margin="0,2,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Volume -->
+                <Border Grid.Row="6" Grid.ColumnSpan="3" Style="{StaticResource Tile}" Padding="14,12">
+                    <StackPanel>
+                        <DockPanel Margin="0,0,0,10">
+                            <TextBlock x:Name="VolText" DockPanel.Dock="Right" Style="{StaticResource Muted}" FontSize="12"/>
+                            <TextBlock Text="Volume" FontSize="12" FontWeight="SemiBold" Foreground="#F5F5F7"/>
+                        </DockPanel>
+                        <Slider x:Name="Vol" Style="{StaticResource FatSlider}" ValueChanged="Vol_ValueChanged"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Actions -->
+                <Grid Grid.Row="8" Grid.ColumnSpan="3">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Button x:Name="ConnBtn" Style="{StaticResource FlatButton}" Tag="12" Height="38" Background="#14FFFFFF" Click="ConnBtn_Click">
+                        <TextBlock x:Name="ConnBtnText" Text="Use on this PC" FontSize="12.5" FontWeight="SemiBold" Foreground="#F5F5F7"/>
+                    </Button>
+                    <Button Grid.Column="2" Style="{StaticResource FlatButton}" Tag="12" Height="38" Padding="16,0" Background="#14FFFFFF" Click="Quit_Click">
+                        <TextBlock Text="Quit" FontSize="12.5" Foreground="#99F5F5F7"/>
+                    </Button>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
