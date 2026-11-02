@@ -61,6 +61,10 @@ static class Theme
             Set(r, "GreenText", 0x24, 0x8A, 0x3D);   // darker so text passes contrast on white
             Set(r, "Orange", 0xC9, 0x34, 0x00);
             r["ShadowOpacity"] = 0.16;
+            // Earbud glyph stays white on light backgrounds, lifted by a soft shadow and hairline.
+            Set(r, "GlyphFill", 0xFF, 0xFF, 0xFF);
+            r["GlyphStroke"] = Brushes.Transparent;
+            r["GlyphShadow"] = 0.38;
         }
         else
         {
@@ -75,6 +79,9 @@ static class Theme
             Set(r, "GreenText", 0x30, 0xD1, 0x58);
             Set(r, "Orange", 0xFF, 0x9F, 0x0A);
             r["ShadowOpacity"] = 0.45;
+            Set(r, "GlyphFill", 0xF5, 0xF5, 0xF7);
+            r["GlyphStroke"] = Brushes.Transparent;
+            r["GlyphShadow"] = 0.0;
         }
         Changed?.Invoke();
     }

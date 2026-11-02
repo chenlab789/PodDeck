@@ -14,6 +14,9 @@
         <SolidColorBrush x:Key="InkMuted" Color="#8E8E93"/>
         <SolidColorBrush x:Key="InkOutline" Color="#2C2C2E"/>
         <SolidColorBrush x:Key="InkSegOff" Color="#2C2C2E"/>
+        <SolidColorBrush x:Key="GlyphFill" Color="#F5F5F7"/>
+        <SolidColorBrush x:Key="GlyphStroke" Color="Transparent"/>
+        <sys:Double x:Key="GlyphShadow" xmlns:sys="clr-namespace:System;assembly=System.Runtime">0</sys:Double>
         <SolidColorBrush x:Key="Green" Color="#30D158"/>
         <SolidColorBrush x:Key="GreenText" Color="#30D158"/>
         <SolidColorBrush x:Key="Orange" Color="#FF9F0A"/>
