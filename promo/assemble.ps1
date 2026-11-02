@@ -5,7 +5,7 @@ param(
     [string]$Real = '',
     [string]$Out = ''
 )
-$ff = 'D:\ClipCut\bin\ffmpeg.exe'
+$ff = if ($env:FFMPEG) { $env:FFMPEG } else { 'ffmpeg' }
 $root = $PSScriptRoot
 $size = if ($Format -eq '916') { '1080x1920' } else { '1920x1080' }
 $dir = Join-Path $root "out\v$Format"
@@ -36,3 +36,4 @@ $filter = "$v" + "concat=n=$segs`:v=1:a=0,format=yuv420p[v];" +
     "[m][s1][s2]amix=inputs=3:normalize=0:duration=first,alimiter=limit=0.9[a]"
 & $ff -y -hide_banner -loglevel error @inputs -filter_complex $filter -map '[v]' -map '[a]' -c:v libx264 -crf 17 -preset slow -c:a aac -b:a 192k -movflags +faststart $Out
 "wrote $Out ($([math]::Round($total,1)) s)"
+

@@ -10,8 +10,8 @@ const args = process.argv.slice(6);
 const opt = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d; };
 const fps = +opt('--fps', 30);
 const preview = opt('--preview', null);
-const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-const FFMPEG = 'D:/ClipCut/bin/ffmpeg.exe';
+const CHROME = process.env.CHROME || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+const FFMPEG = process.env.FFMPEG || 'ffmpeg';
 
 (async () => {
   fs.mkdirSync(outDir, { recursive: true });
@@ -41,4 +41,5 @@ const FFMPEG = 'D:/ClipCut/bin/ffmpeg.exe';
     console.log('wrote', mp4, 'total', total, 's');
   } else console.log('preview frames', times.length);
 })();
+
 
