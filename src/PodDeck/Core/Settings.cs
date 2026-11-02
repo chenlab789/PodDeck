@@ -9,8 +9,10 @@ public sealed class Settings
     public bool KeepStereo { get; set; } = false;
     public bool ShowLidOverlay { get; set; } = true;
     public bool ShowStatusHud { get; set; } = true;
-    /// <summary>HUD vertical position as a fraction of the work area height (user can drag it).</summary>
-    public double HudTop { get; set; } = 0.32;
+    /// <summary>Which screen edge the HUD docks to: "Right" (vertical) or "Top" (horizontal).</summary>
+    public string HudEdge { get; set; } = "Right";
+    /// <summary>HUD position along its edge, as a fraction of the work area (user drags it).</summary>
+    public double HudPos { get; set; } = 0.32;
     public bool LowBatteryWarning { get; set; } = true;
     public int LowBatteryLevel { get; set; } = 20;
     public string DeviceName { get; set; } = "AirPods";
