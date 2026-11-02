@@ -2,36 +2,41 @@ using Windows.Media.Control;
 
 namespace PodDeck.Core;
 
-/// <summary>Pause / resume whatever is playing, via the system media session (SMTC).</summary>
+/// <summary>Pause / resume whatever is playing, via the system media sessions (SMTC).</summary>
 public static class Media
 {
     static GlobalSystemMediaTransportControlsSessionManager? _mgr;
-    static bool _pausedByUs;
+    static readonly List<string> _pausedByUs = new();
 
-    static async Task<GlobalSystemMediaTransportControlsSession?> Session()
+    static async Task<IReadOnlyList<GlobalSystemMediaTransportControlsSession>> Sessions()
     {
         _mgr ??= await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
-        return _mgr.GetCurrentSession();
+        return _mgr.GetSessions();
     }
 
-    /// <summary>Pause if something is playing; remember that we did it.</summary>
-    public static async Task PauseIfPlaying()
+    /// <summary>Pause every session that is playing (not only the "current" one). Returns a summary for the log.</summary>
+    public static async Task<string> PauseIfPlaying()
     {
-        var s = await Session();
-        if (s is null) return;
-        var st = s.GetPlaybackInfo().PlaybackStatus;
-        if (st == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
+        var sessions = await Sessions();
+        var notes = new List<string>();
+        foreach (var s in sessions)
         {
-            _pausedByUs = await s.TryPauseAsync();
+            var st = s.GetPlaybackInfo().PlaybackStatus;
+            notes.Add($"{s.SourceAppUserModelId}={st}");
+            if (st == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing && await s.TryPauseAsync())
+                _pausedByUs.Add(s.SourceAppUserModelId);
         }
+        return sessions.Count == 0 ? "no media sessions" : string.Join(", ", notes);
     }
 
-    /// <summary>Resume only if we were the ones who paused.</summary>
-    public static async Task ResumeIfWePaused()
+    /// <summary>Resume only the sessions we paused.</summary>
+    public static async Task<string> ResumeIfWePaused()
     {
-        if (!_pausedByUs) return;
-        _pausedByUs = false;
-        var s = await Session();
-        if (s is not null) await s.TryPlayAsync();
+        if (_pausedByUs.Count == 0) return "nothing paused by us";
+        var ids = _pausedByUs.ToList();
+        _pausedByUs.Clear();
+        foreach (var s in await Sessions())
+            if (ids.Contains(s.SourceAppUserModelId)) await s.TryPlayAsync();
+        return "resumed " + string.Join(", ", ids);
     }
 }

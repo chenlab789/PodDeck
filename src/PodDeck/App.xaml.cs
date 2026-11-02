@@ -113,13 +113,15 @@ public partial class App : Application
 
     async void OnEarChange(int before, int after)
     {
-        if (!_settings.PauseOnRemove || !SafeIsConnected()) return;
+        bool connected = SafeIsConnected();
+        Log.Write($"ear {before}->{after} pauseOnRemove={_settings.PauseOnRemove} connected={connected}");
+        if (!_settings.PauseOnRemove || !connected) return;
         try
         {
-            if (after < before) await Media.PauseIfPlaying();
-            else if (after > before) await Media.ResumeIfWePaused();
+            if (after < before) Log.Write("pause: " + await Media.PauseIfPlaying());
+            else if (after > before) Log.Write("resume: " + await Media.ResumeIfWePaused());
         }
-        catch { /* no media session */ }
+        catch (Exception ex) { Log.Write("media error " + ex.Message); }
     }
 
     void ShowOverlay()

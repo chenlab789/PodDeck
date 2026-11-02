@@ -72,6 +72,8 @@ public sealed class PodWatcher : IDisposable
             _inEar = s.InEarCount;
 
             fireChange = _current is null || !SameVisible(_current, s);
+            if (_current is null || _current.Status != s.Status || _current.LidByte != s.LidByte)
+                Log.Write($"adv status=0x{s.Status:X2} lid=0x{s.LidByte:X2} inEar={s.InEarCount} inCase={s.InCase} L={s.Left} R={s.Right} C={s.Case} rssi={s.Rssi}");
             _current = s;
         }
         if (fireChange) StateChanged?.Invoke(s);
