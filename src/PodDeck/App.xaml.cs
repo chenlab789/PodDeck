@@ -26,6 +26,23 @@ public partial class App : Application
         _settings = Settings.Load();
         BtAudio.NameMatch = _settings.DeviceName;
 
+        if (e.Args.Contains("--unmute-mic"))
+        {
+            var sb = new System.Text.StringBuilder();
+            using (var en = new NAudio.CoreAudioApi.MMDeviceEnumerator())
+                foreach (var d in en.EnumerateAudioEndPoints(NAudio.CoreAudioApi.DataFlow.Capture, NAudio.CoreAudioApi.DeviceState.Active))
+                {
+                    string n; try { n = d.FriendlyName; } catch { continue; }
+                    if (!n.Contains(_settings.DeviceName, StringComparison.OrdinalIgnoreCase)) continue;
+                    d.AudioEndpointVolume.Mute = false;
+                    d.AudioEndpointVolume.MasterVolumeLevelScalar = 1.0f;
+                    sb.AppendLine($"{n}: mute={d.AudioEndpointVolume.Mute} vol={d.AudioEndpointVolume.MasterVolumeLevelScalar:0.00}");
+                }
+            System.IO.File.WriteAllText(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "poddeck-mic.txt"), sb.Length == 0 ? "AirPods mic not active" : sb.ToString());
+            Shutdown();
+            return;
+        }
+
         if (e.Args.Contains("--fix-mic"))
         {
             // Undo v0.1.0's Keep Stereo, which could pick a silent virtual mic.
@@ -55,6 +72,21 @@ public partial class App : Application
                     foreach (var flow in new[] { NAudio.CoreAudioApi.DataFlow.Render, NAudio.CoreAudioApi.DataFlow.Capture })
                         foreach (var role in new[] { NAudio.CoreAudioApi.Role.Console, NAudio.CoreAudioApi.Role.Communications })
                             try { log.AppendLine($"[default] {flow} {role}: {en.GetDefaultAudioEndpoint(flow, role).FriendlyName}"); } catch { }
+                using (var en = new NAudio.CoreAudioApi.MMDeviceEnumerator())
+                    foreach (var d in en.EnumerateAudioEndPoints(NAudio.CoreAudioApi.DataFlow.All, NAudio.CoreAudioApi.DeviceState.Active))
+                    {
+                        string n; try { n = d.FriendlyName; } catch { continue; }
+                        if (!n.Contains("AirPods") && !n.Contains("Broadcast")) continue;
+                        log.AppendLine($"[endpoint] {d.DataFlow} '{n}' vol={d.AudioEndpointVolume.MasterVolumeLevelScalar:0.00} mute={d.AudioEndpointVolume.Mute}");
+                        var sessions = d.AudioSessionManager.Sessions;
+                        for (int i = 0; i < sessions.Count; i++)
+                        {
+                            var s = sessions[i];
+                            string proc = "?";
+                            try { proc = System.Diagnostics.Process.GetProcessById((int)s.GetProcessID).ProcessName; } catch { }
+                            log.AppendLine($"    session {proc} state={s.State}");
+                        }
+                    }
                 if (!e.Args.Contains("--no-connect")) log.AppendLine($"Connect() => {BtAudio.Connect()}");
             }
             catch (Exception ex) { log.AppendLine("FATAL " + ex); }
