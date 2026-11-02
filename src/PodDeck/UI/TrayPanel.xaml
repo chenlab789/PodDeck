@@ -9,30 +9,30 @@
         <Style x:Key="Row" TargetType="Button" BasedOn="{StaticResource FlatButton}">
             <Setter Property="Tag" Value="0"/>
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderBrush" Value="{StaticResource InkLine}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource InkLine}"/>
             <Setter Property="BorderThickness" Value="0,1,0,0"/>
             <Setter Property="MinHeight" Value="42"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         </Style>
         <Style x:Key="RowText" TargetType="TextBlock">
             <Setter Property="FontSize" Value="12.5"/>
-            <Setter Property="Foreground" Value="{StaticResource InkFg}"/>
+            <Setter Property="Foreground" Value="{DynamicResource InkFg}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
     </Window.Resources>
     <Grid Margin="24">
-        <Border Width="290" CornerRadius="20" Background="{StaticResource InkBg}" BorderBrush="{StaticResource InkBorder}"
+        <Border Width="290" CornerRadius="20" Background="{DynamicResource InkBg}" BorderBrush="{DynamicResource InkBorder}"
                 BorderThickness="1" Padding="18,16,18,16">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="40" ShadowDepth="10" Direction="270" Opacity="0.45" Color="#000000"/>
+                <DropShadowEffect BlurRadius="40" ShadowDepth="10" Direction="270" Opacity="{DynamicResource ShadowOpacity}" Color="#000000"/>
             </Border.Effect>
             <StackPanel>
                 <DockPanel Margin="0,0,0,12">
                     <TextBlock x:Name="ConnText" DockPanel.Dock="Right" FontSize="11" VerticalAlignment="Bottom"/>
-                    <TextBlock x:Name="NameText" Text="AirPods" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource InkFg}"/>
+                    <TextBlock x:Name="NameText" Text="AirPods" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource InkFg}"/>
                 </DockPanel>
 
-                <Border BorderBrush="{StaticResource InkLine}" BorderThickness="0,1,0,0" Padding="0,10">
+                <Border BorderBrush="{DynamicResource InkLine}" BorderThickness="0,1,0,0" Padding="0,10">
                     <Grid x:Name="BatRow">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition/><ColumnDefinition/><ColumnDefinition/>
@@ -70,24 +70,31 @@
                     </DockPanel>
                 </Button>
 
-                <Border BorderBrush="{StaticResource InkLine}" BorderThickness="0,1,0,0" MinHeight="42">
+                <Button x:Name="ThemeRow" Style="{StaticResource Row}" Click="ThemeRow_Click" ToolTip="Dark, Light, or follow Windows (Auto)">
                     <DockPanel>
-                        <TextBlock DockPanel.Dock="Right" Text="soon" FontSize="12" Foreground="{StaticResource InkMuted}" VerticalAlignment="Center"/>
-                        <TextBlock Text="Noise control" FontSize="12.5" Foreground="{StaticResource InkMuted}" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="ThemeText" DockPanel.Dock="Right" FontSize="12" Foreground="{DynamicResource InkMuted}" VerticalAlignment="Center"/>
+                        <TextBlock Text="Theme" Style="{StaticResource RowText}"/>
+                    </DockPanel>
+                </Button>
+
+                <Border BorderBrush="{DynamicResource InkLine}" BorderThickness="0,1,0,0" MinHeight="42">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Right" Text="soon" FontSize="12" Foreground="{DynamicResource InkMuted}" VerticalAlignment="Center"/>
+                        <TextBlock Text="Noise control" FontSize="12.5" Foreground="{DynamicResource InkMuted}" VerticalAlignment="Center"/>
                     </DockPanel>
                 </Border>
 
-                <Border BorderBrush="{StaticResource InkLine}" BorderThickness="0,1,0,0" Padding="0,10,0,8">
+                <Border BorderBrush="{DynamicResource InkLine}" BorderThickness="0,1,0,0" Padding="0,10,0,8">
                     <StackPanel>
                         <DockPanel>
-                            <TextBlock x:Name="VolText" DockPanel.Dock="Right" FontSize="12" Foreground="{StaticResource InkMuted}"/>
+                            <TextBlock x:Name="VolText" DockPanel.Dock="Right" FontSize="12" Foreground="{DynamicResource InkMuted}"/>
                             <TextBlock Text="Volume" Style="{StaticResource RowText}"/>
                         </DockPanel>
                         <!-- Tall transparent hit area, thin visual line -->
                         <Border x:Name="VolBar" Height="20" Background="Transparent" Cursor="Hand" Margin="0,4,0,0">
                             <Grid VerticalAlignment="Center">
-                                <Border Height="4" CornerRadius="2" Background="{StaticResource InkBorder}"/>
-                                <Border x:Name="VolFill" Height="4" CornerRadius="2" Background="{StaticResource InkFg}"
+                                <Border Height="4" CornerRadius="2" Background="{DynamicResource InkBorder}"/>
+                                <Border x:Name="VolFill" Height="4" CornerRadius="2" Background="{DynamicResource InkFg}"
                                         HorizontalAlignment="Left" Width="0" IsHitTestVisible="False"/>
                             </Grid>
                         </Border>
@@ -99,12 +106,12 @@
                         <ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <Button x:Name="ConnBtn" Style="{StaticResource FlatButton}" Tag="10" Height="34" Background="Transparent"
-                            BorderBrush="{StaticResource InkOutline}" BorderThickness="1" Click="ConnBtn_Click">
-                        <TextBlock x:Name="ConnBtnText" Text="Use on this PC" FontSize="12" Foreground="{StaticResource InkFg}"/>
+                            BorderBrush="{DynamicResource InkOutline}" BorderThickness="1" Click="ConnBtn_Click">
+                        <TextBlock x:Name="ConnBtnText" Text="Use on this PC" FontSize="12" Foreground="{DynamicResource InkFg}"/>
                     </Button>
                     <Button Grid.Column="2" Style="{StaticResource FlatButton}" Tag="10" Height="34" Padding="14,0" Background="Transparent"
-                            BorderBrush="{StaticResource InkOutline}" BorderThickness="1" Click="Quit_Click">
-                        <TextBlock Text="Quit" FontSize="12" Foreground="{StaticResource InkMuted}"/>
+                            BorderBrush="{DynamicResource InkOutline}" BorderThickness="1" Click="Quit_Click">
+                        <TextBlock Text="Quit" FontSize="12" Foreground="{DynamicResource InkMuted}"/>
                     </Button>
                 </Grid>
             </StackPanel>

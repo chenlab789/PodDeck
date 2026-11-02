@@ -38,7 +38,7 @@ public partial class TrayPanel : Window
     {
         NameText.Text = s?.ModelName ?? _settings.DeviceName;
         ConnText.Text = connected ? "Connected" : "Not connected";
-        ConnText.Foreground = connected ? Visuals.Green : Visuals.Muted;
+        ConnText.Foreground = connected ? Visuals.GreenText : Visuals.Muted;
         ConnBtnText.Text = connected ? "Hand off to iPhone" : "Use on this PC";
 
         BatRow.Children.Clear();
@@ -73,6 +73,16 @@ public partial class TrayPanel : Window
         Visuals.PaintSwitch(PauseSw, PauseKnob, _settings.PauseOnRemove);
         Visuals.PaintSwitch(HudSw, HudKnob, _settings.ShowStatusHud);
         Visuals.PaintSwitch(StereoSw, StereoKnob, _settings.KeepStereo);
+        ThemeText.Text = _settings.Theme;
+    }
+
+    void ThemeRow_Click(object sender, RoutedEventArgs e)
+    {
+        int i = Array.IndexOf(Theme.Modes, _settings.Theme);
+        _settings.Theme = Theme.Modes[(i + 1) % Theme.Modes.Length];
+        _settings.Save();
+        Theme.SetMode(_settings.Theme);
+        RefreshToggles();
     }
 
     public void Refresh() => RefreshToggles();

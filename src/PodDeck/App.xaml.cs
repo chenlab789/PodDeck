@@ -25,6 +25,7 @@ public partial class App : Application
 
         _settings = Settings.Load();
         BtAudio.NameMatch = _settings.DeviceName;
+        Theme.Init(_settings.Theme);
 
         if (e.Args.Contains("--unmute-mic"))
         {
@@ -109,6 +110,15 @@ public partial class App : Application
         _hudTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
         _hudTimer.Tick += (_, _) => { if (_hud.IsVisible) _hud.Update(_watcher.Current, SafeIsConnected()); };
         _hudTimer.Start();
+
+        // Code-built visuals (battery rows, HUD, card numbers) are rebuilt with the new palette.
+        Theme.Changed += () =>
+        {
+            bool c = SafeIsConnected();
+            _hud.Update(_watcher?.Current, c);
+            if (_panel.IsVisible) _panel.Update(_watcher?.Current, c);
+            if (_overlay.IsVisible && _watcher?.Current is { } s) _overlay.Update(s, c);
+        };
 
         _tray = new Forms.NotifyIcon { Icon = MakeTrayIcon(), Text = "PodDeck", Visible = true };
         _tray.MouseClick += (_, a) => { if (a.Button == Forms.MouseButtons.Left) TogglePanel(); };

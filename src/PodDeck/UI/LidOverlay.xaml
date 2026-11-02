@@ -5,26 +5,26 @@
         Topmost="True" ShowInTaskbar="False" ShowActivated="False" ResizeMode="NoResize"
         SizeToContent="WidthAndHeight" FontFamily="{StaticResource UiFont}" Opacity="0">
     <Grid Margin="30">
-        <Border Width="440" CornerRadius="22" Background="{StaticResource InkBg}" BorderBrush="{StaticResource InkBorder}"
+        <Border Width="440" CornerRadius="22" Background="{DynamicResource InkBg}" BorderBrush="{DynamicResource InkBorder}"
                 BorderThickness="1" Padding="26,22">
             <Border.Effect>
-                <DropShadowEffect BlurRadius="40" ShadowDepth="10" Direction="270" Opacity="0.45" Color="#000000"/>
+                <DropShadowEffect BlurRadius="40" ShadowDepth="10" Direction="270" Opacity="{DynamicResource ShadowOpacity}" Color="#000000"/>
             </Border.Effect>
             <StackPanel>
                 <DockPanel>
-                    <Path Data="{StaticResource PodsGlyph}" Fill="{StaticResource InkFg}" Width="46" Height="46"
+                    <Path Data="{StaticResource PodsGlyph}" Fill="{DynamicResource InkFg}" Width="46" Height="46"
                           Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,22,0"/>
                     <StackPanel>
                         <DockPanel>
                             <Button x:Name="CloseBtn" DockPanel.Dock="Right" Style="{StaticResource FlatButton}" Tag="12"
                                     Width="24" Height="24" Background="Transparent" ToolTip="Close" Click="CloseBtn_Click">
-                                <Path Data="M1.5,1.5 L8.5,8.5 M8.5,1.5 L1.5,8.5" Stroke="{StaticResource InkMuted}" StrokeThickness="1.4"
+                                <Path Data="M1.5,1.5 L8.5,8.5 M8.5,1.5 L1.5,8.5" Stroke="{DynamicResource InkMuted}" StrokeThickness="1.4"
                                       StrokeStartLineCap="Round" StrokeEndLineCap="Round" Width="10" Height="10"/>
                             </Button>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <TextBlock x:Name="NameText" Text="AirPods" FontSize="13" FontWeight="Medium" Foreground="{StaticResource InkFg}"/>
-                                <Ellipse x:Name="Dot" Width="5" Height="5" Margin="8,1,8,0" Fill="{StaticResource Green}" VerticalAlignment="Center"/>
-                                <TextBlock x:Name="StatusText" Text="Connected" FontSize="12" Foreground="{StaticResource InkMuted}" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="NameText" Text="AirPods" FontSize="13" FontWeight="Medium" Foreground="{DynamicResource InkFg}"/>
+                                <Ellipse x:Name="Dot" Width="5" Height="5" Margin="8,1,8,0" Fill="{DynamicResource Green}" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="StatusText" Text="Connected" FontSize="12" Foreground="{DynamicResource InkMuted}" VerticalAlignment="Center"/>
                             </StackPanel>
                         </DockPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
@@ -35,8 +35,8 @@
                     </StackPanel>
                 </DockPanel>
                 <Button x:Name="ActionBtn" Style="{StaticResource FlatButton}" Tag="10" Height="34" Margin="0,18,0,0"
-                        Background="Transparent" BorderBrush="{StaticResource InkOutline}" BorderThickness="1" Click="ActionBtn_Click">
-                    <TextBlock x:Name="ActionText" Text="Use on this PC" FontSize="12" Foreground="{StaticResource InkFg}"/>
+                        Background="Transparent" BorderBrush="{DynamicResource InkOutline}" BorderThickness="1" Click="ActionBtn_Click">
+                    <TextBlock x:Name="ActionText" Text="Use on this PC" FontSize="12" Foreground="{DynamicResource InkFg}"/>
                 </Button>
             </StackPanel>
         </Border>

@@ -9,6 +9,8 @@ public sealed class Settings
     public bool KeepStereo { get; set; } = false;
     public bool ShowLidOverlay { get; set; } = true;
     public bool ShowStatusHud { get; set; } = true;
+    /// <summary>"Dark", "Light" or "Auto" (follow Windows app theme).</summary>
+    public string Theme { get; set; } = "Dark";
     /// <summary>Which screen edge the HUD docks to: "Right" (vertical) or "Top" (horizontal).</summary>
     public string HudEdge { get; set; } = "Right";
     /// <summary>HUD position along its edge, as a fraction of the work area (user drags it).</summary>

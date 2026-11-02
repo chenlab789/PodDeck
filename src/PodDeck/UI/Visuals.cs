@@ -8,23 +8,20 @@ namespace PodDeck.UI;
 /// <summary>Ink theme palette and the small building blocks shared by every window.</summary>
 static class Visuals
 {
-    public static readonly Brush Bg = Make(0x0B, 0x0B, 0x0C);
-    public static readonly Brush Border = Make(0x22, 0x22, 0x22);
-    public static readonly Brush Line = Make(0x1C, 0x1C, 0x1E);
-    public static readonly Brush Fg = Make(0xF5, 0xF5, 0xF7);
-    public static readonly Brush Muted = Make(0x8E, 0x8E, 0x93);
-    public static readonly Brush SegOff = Make(0x2C, 0x2C, 0x2E);
-    public static readonly Brush Green = Make(0x30, 0xD1, 0x58);
-    public static readonly Brush Orange = Make(0xFF, 0x9F, 0x0A);
+    // Read live from Application resources so a theme switch takes effect on the next rebuild.
+    public static Brush Bg => R("InkBg");
+    public static Brush Border => R("InkBorder");
+    public static Brush Line => R("InkLine");
+    public static Brush Fg => R("InkFg");
+    public static Brush Muted => R("InkMuted");
+    public static Brush SegOff => R("InkSegOff");
+    public static Brush Green => R("Green");
+    public static Brush GreenText => R("GreenText");
+    public static Brush Orange => R("Orange");
 
     public static readonly FontFamily Mono = new("Segoe UI Variable Display, Segoe UI");
 
-    static Brush Make(byte r, byte g, byte b)
-    {
-        var br = new SolidColorBrush(Color.FromRgb(r, g, b));
-        br.Freeze();
-        return br;
-    }
+    static Brush R(string key) => (Brush)Application.Current.Resources[key];
 
     public static Brush LevelBrush(int? level, int low) => level is not null && level <= low ? Orange : Fg;
 
