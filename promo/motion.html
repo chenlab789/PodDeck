@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PodDeck promo motion</title>
+<style>
+  html, body { margin: 0; background: #000; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+/*
+ * PodDeck promo: every frame is render(t), deterministic, so it can be seeked and recorded.
+ * ?w=1080&h=1920 (9:16) or ?w=1920&h=1080 (16:9). ?part=intro (scenes 1-5) | outro (scene 7).
+ * ?t=3.2 previews a single time.
+ */
+const q = new URLSearchParams(location.search);
+const W = +(q.get('w') || 1080), H = +(q.get('h') || 1920);
+const PART = q.get('part') || 'intro';
+const PORTRAIT = H > W;
+const cv = document.getElementById('c');
+cv.width = W; cv.height = H;
+const g = cv.getContext('2d');
+
+const C = {
+  bg: '#0b0b0c', fg: '#f5f5f7', muted: '#8e8e93', line: '#2c2c2e', border: '#222222',
+  green: '#30d158', red: '#ff6961', desk: '#2f343c', card: '#0b0b0c',
+  lbg: '#ffffff', lfg: '#1d1d1f', lmuted: '#6e6e73', lline: '#e5e5ea',
+};
+const FONT = '"Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif';
+
+// ---------- easing & helpers ----------
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const easeOut = (x) => 1 - Math.pow(1 - x, 3);
+const easeInOut = (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+const easeBack = (x) => { const c1 = 1.5, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+
+function rr(x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r);
+  g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r);
+  g.arcTo(x, y, x + w, y, r);
+  g.closePath();
+}
+function text(s, x, y, size, color, weight = 400, align = 'left', alpha = 1) {
+  g.save();
+  g.globalAlpha *= alpha;
+  g.font = `${weight} ${size}px ${FONT}`;
+  g.fillStyle = color;
+  g.textAlign = align;
+  g.textBaseline = 'alphabetic';
+  g.fillText(s, x, y);
+  g.restore();
+}
+function tw(s, size, weight = 400) { g.font = `${weight} ${size}px ${FONT}`; return g.measureText(s).width; }
+
+// Earbud glyph (44x44 design grid), filled.
+function pods(x, y, size, color, shadow = false) {
+  const k = size / 44;
+  g.save();
+  g.translate(x, y);
+  g.scale(k, k);
+  if (shadow) { g.shadowColor = 'rgba(0,0,0,0.35)'; g.shadowBlur = 6; g.shadowOffsetY = 2; }
+  g.fillStyle = color;
+  for (const [cx, sx] of [[14, 14], [30, 25]]) {
+    g.beginPath(); g.arc(cx, 13, 7, 0, Math.PI * 2); g.fill();
+    rr(sx, 13, 5, 22, 2.5); g.fill();
+  }
+  g.restore();
+}
+
+// Headline block: big lines + optional sub, slides up and fades.
+function headline(lines, sub, p, out = 0) {
+  const a = easeOut(p) * (1 - out);
+  const big = PORTRAIT ? 96 : 88, sm = PORTRAIT ? 40 : 34;
+  const x = PORTRAIT ? 96 : 150;
+  let y = PORTRAIT ? 300 : 420;
+  const dy = (1 - easeOut(p)) * 40;
+  lines.forEach((l, i) => { text(l, x, y + dy + i * big * 1.08, big, C.fg, 700, 'left', a); });
+  if (sub) text(sub, x, y + dy + lines.length * big * 1.08 + 18, sm, C.muted, 400, 'left', a);
+}
+// Center of the "UI" stage, and how much UI is enlarged (phones need bigger UI).
+const UI = PORTRAIT ? { x: W / 2, y: 1150 } : { x: 1330, y: 560 };
+const K = PORTRAIT ? 1.28 : 1.05;   // cards, case, panel, keys
+const KH = PORTRAIT ? 1.9 : 1.4;    // HUD strip
+
+function segs(x, y, level, lit, off, n = 10, w = 10, h = 7, gap = 4) {
+  const on = Math.ceil(level / 10);
+  for (let i = 0; i < n; i++) { g.fillStyle = i < on ? lit : off; rr(x + i * (w + gap), y, w, h, 2); g.fill(); }
+}
+
+// Ink lid card. vals = [L, R, C] numbers; theme light/dark.
+function inkCard(cx, cy, vals, alpha, light, caseStale = true) {
+  const w = 760, h = 230;
+  const x = -w / 2, y = -h / 2;
+  g.save();
+  g.translate(cx, cy); g.scale(K, K);
+  g.globalAlpha = alpha;
+  g.shadowColor = light ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.55)'; g.shadowBlur = 60; g.shadowOffsetY = 20;
+  g.fillStyle = light ? C.lbg : C.card; rr(x, y, w, h, 38); g.fill();
+  g.shadowColor = 'transparent';
+  g.strokeStyle = light ? C.lline : C.border; g.lineWidth = 2; rr(x, y, w, h, 38); g.stroke();
+  pods(x + 44, y + 62, 92, light ? '#ffffff' : C.fg, light);
+  const fg = light ? C.lfg : C.fg, mu = light ? C.lmuted : C.muted;
+  text('AirPods 4', x + 180, y + 66, 26, fg, 600);
+  g.fillStyle = C.green; g.beginPath(); g.arc(x + 180 + tw('AirPods 4', 26, 600) + 16, y + 58, 5, 0, Math.PI * 2); g.fill();
+  text('Connected', x + 180 + tw('AirPods 4', 26, 600) + 32, y + 66, 22, mu);
+  const labels = ['LEFT', 'RIGHT', 'CASE'];
+  vals.forEach((v, i) => {
+    const bx = x + 180 + i * 180;
+    const stale = i === 2 && caseStale;
+    text(String(Math.round(v)), bx, y + 150, 64, stale ? mu : fg, 300);
+    segs(bx, y + 166, v, stale ? mu : fg, light ? '#e5e5ea' : C.line);
+    text(labels[i], bx, y + 205, 18, mu, 500);
+  });
+  g.restore();
+}
+
+// Line-art charging case, lid opening p 0..1.
+function caseArt(cx, cy, p, alpha) {
+  const w = 300, bh = 190, lh = 80, r = 70;
+  g.save();
+  g.translate(cx, cy); g.scale(K, K); cx = 0; cy = 0;
+  const x = -w / 2, top = -bh / 2 + 30;
+  g.globalAlpha = alpha;
+  g.lineWidth = 6; g.strokeStyle = C.fg; g.lineJoin = 'round';
+  // inside of the case appears as the lid lifts
+  if (p > 0.05) {
+    g.save(); g.globalAlpha = alpha * clamp(p * 1.5);
+    g.fillStyle = '#1c1c1e'; g.beginPath(); g.ellipse(cx, top, w / 2 - 18, 22 * p, 0, 0, Math.PI * 2); g.fill();
+    // pod heads peeking
+    g.fillStyle = C.fg;
+    for (const dx of [-46, 46]) { g.beginPath(); g.arc(cx + dx, top - 6 - 14 * easeOut(p), 20, 0, Math.PI * 2); g.fill(); }
+    g.restore();
+  }
+  // body
+  g.beginPath();
+  g.moveTo(x, top);
+  g.lineTo(x + w, top);
+  g.lineTo(x + w, top + bh - r);
+  g.arcTo(x + w, top + bh, x + w - r, top + bh, r);
+  g.lineTo(x + r, top + bh);
+  g.arcTo(x, top + bh, x, top + bh - r, r);
+  g.closePath();
+  g.fillStyle = C.bg; g.fill(); g.stroke();
+  // LED
+  g.fillStyle = C.green; g.globalAlpha = alpha * clamp((p - 0.4) * 3);
+  g.beginPath(); g.arc(cx, top + 70, 7, 0, Math.PI * 2); g.fill();
+  g.globalAlpha = alpha;
+  // lid: hinged at the back, lifts up and flattens
+  const lift = easeInOut(p);
+  g.save();
+  g.translate(cx, top - lift * 110);
+  g.scale(1, 1 - 0.55 * lift);
+  g.beginPath();
+  g.moveTo(-w / 2, 0);
+  g.lineTo(-w / 2, -lh + r * 0.6);
+  g.arcTo(-w / 2, -lh, -w / 2 + r, -lh, r * 0.9);
+  g.lineTo(w / 2 - r, -lh);
+  g.arcTo(w / 2, -lh, w / 2, -lh + r * 0.6, r * 0.9);
+  g.lineTo(w / 2, 0);
+  g.closePath();
+  g.fillStyle = C.bg; g.fill();
+  g.lineWidth = 6 / (1 - 0.55 * lift);
+  g.stroke();
+  g.restore();
+  g.restore();
+}
+
+// Status HUD, vertical (o=0) morphing to horizontal (o=1).
+// x,y: vertical = top-left of the strip; horizontal = top-center. Drawn at KH scale.
+function hud(x, y, o, alpha) {
+  g.save();
+  g.translate(x, y); g.scale(KH, KH); x = 0; y = 0;
+  g.globalAlpha = alpha;
+  const vals = [70, 60, 85];
+  if (o < 0.5) {
+    const w = 78, h = 300;
+    g.fillStyle = C.card; g.strokeStyle = C.border; g.lineWidth = 2;
+    rr(x, y, w + 20, h, 22); g.fill(); g.stroke();
+    pods(x + 22, y + 22, 36, C.fg);
+    g.fillStyle = C.green; g.beginPath(); g.arc(x + 39, y + 80, 5, 0, Math.PI * 2); g.fill();
+    ['L', 'R', 'C'].forEach((l, i) => {
+      const yy = y + 104 + i * 64;
+      text(l, x + 39, yy, 14, C.muted, 500, 'center');
+      g.fillStyle = C.line; rr(x + 34, yy + 8, 10, 30, 5); g.fill();
+      g.fillStyle = i === 2 ? C.muted : C.fg; const fh = 30 * vals[i] / 100; rr(x + 34, yy + 38 - fh, 10, fh, 5); g.fill();
+      text(String(vals[i]), x + 39, yy + 56, 15, i === 2 ? C.muted : C.fg, 600, 'center');
+    });
+  } else {
+    const w = 470, h = 62;
+    g.fillStyle = C.card; g.strokeStyle = C.border; g.lineWidth = 2;
+    rr(x - w / 2, y - 20, w, h + 20, 22); g.fill(); g.stroke();
+    pods(x - w / 2 + 24, y + 12, 30, C.fg);
+    g.fillStyle = C.green; g.beginPath(); g.arc(x - w / 2 + 74, y + 27, 5, 0, Math.PI * 2); g.fill();
+    ['L', 'R', 'C'].forEach((l, i) => {
+      const xx = x - w / 2 + 98 + i * 124;
+      text(l, xx, y + 33, 15, C.muted, 500);
+      g.fillStyle = C.line; rr(xx + 18, y + 22, 56, 10, 5); g.fill();
+      g.fillStyle = i === 2 ? C.muted : C.fg; rr(xx + 18, y + 22, 56 * vals[i] / 100, 10, 5); g.fill();
+      text(String(vals[i]), xx + 82, y + 34, 16, i === 2 ? C.muted : C.fg, 600);
+    });
+  }
+  g.restore();
+}
+
+function desktop(alpha) {
+  g.save(); g.globalAlpha = alpha;
+  const gr = g.createRadialGradient(W * 0.3, H * 0.2, 0, W * 0.3, H * 0.2, Math.max(W, H));
+  gr.addColorStop(0, '#4a5568'); gr.addColorStop(1, '#23272e');
+  g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  g.fillStyle = 'rgba(16,16,18,0.9)'; g.fillRect(0, H - 70, W, 70);
+  text('9:41', W - 40, H - 26, 22, C.fg, 500, 'right');
+  g.restore();
+}
+
+function cursor(x, y, pressed) {
+  g.save();
+  g.translate(x, y);
+  const s = pressed ? 0.9 : 1;
+  g.scale(1.6 * s, 1.6 * s);
+  g.beginPath();
+  g.moveTo(0, 0); g.lineTo(0, 22); g.lineTo(6, 17); g.lineTo(10, 26); g.lineTo(14, 24); g.lineTo(10, 15); g.lineTo(17, 15); g.closePath();
+  g.fillStyle = '#ffffff'; g.fill(); g.lineWidth = 1.4; g.strokeStyle = '#000'; g.stroke();
+  g.restore();
+}
+
+function toggle(x, y, on, light) {
+  g.fillStyle = on > 0 ? C.green : (light ? '#e5e5ea' : C.line);
+  if (on > 0 && on < 1) { g.fillStyle = on > 0.5 ? C.green : (light ? '#e5e5ea' : C.line); }
+  rr(x, y, 64, 36, 18); g.fill();
+  g.fillStyle = '#ffffff';
+  g.beginPath(); g.arc(x + 18 + 28 * easeInOut(on), y + 18, 14, 0, Math.PI * 2); g.fill();
+}
+
+function panel(cx, cy, light, toggles, alpha, scale) {
+  const w = 560, h = 520;
+  g.save();
+  g.globalAlpha = alpha;
+  g.translate(cx, cy); g.scale(scale * K, scale * K); g.translate(-w / 2, -h / 2);
+  const bg = light ? C.lbg : C.card, fg = light ? C.lfg : C.fg, mu = light ? C.lmuted : C.muted, ln = light ? C.lline : C.line;
+  g.shadowColor = light ? 'rgba(0,0,0,0.18)' : 'rgba(0,0,0,0.55)'; g.shadowBlur = 50; g.shadowOffsetY = 16;
+  g.fillStyle = bg; rr(0, 0, w, h, 34); g.fill();
+  g.shadowColor = 'transparent';
+  g.strokeStyle = light ? C.lline : C.border; g.lineWidth = 2; rr(0, 0, w, h, 34); g.stroke();
+  pods(34, 30, 42, light ? '#ffffff' : C.fg, light);
+  text('AirPods 4', 92, 62, 26, fg, 600);
+  text('Connected', w - 34, 62, 21, light ? '#248a3d' : C.green, 500, 'right');
+  const vals = [70, 60, 85];
+  ['Left', 'Right', 'Case · 2h ago'].forEach((l, i) => {
+    const xx = 34 + i * 170;
+    text(l, xx, 128, 18, mu);
+    text(vals[i] + '%', xx, 166, 30, i === 2 ? mu : fg, 300);
+    segs(xx, 182, vals[i], i === 2 ? mu : fg, light ? '#e5e5ea' : C.line, 10, 8, 6, 3);
+  });
+  const rows = ['Pause on Remove', 'Status HUD', 'Theme'];
+  rows.forEach((r, i) => {
+    const yy = 222 + i * 84;
+    g.fillStyle = ln; g.fillRect(34, yy, w - 68, 2);
+    text(r, 34, yy + 52, 24, fg);
+    if (i < 2) toggle(w - 34 - 64, yy + 24, toggles[i], light);
+    else text(light ? 'Light' : 'Dark', w - 34, yy + 52, 22, mu, 400, 'right');
+  });
+  g.fillStyle = ln; g.fillRect(34, 474, w - 68, 2);
+  g.restore();
+}
+
+function keycap(x, y, label, w, press) {
+  const d = 10 * press;
+  g.fillStyle = '#1c1c1e'; rr(x, y + 10, w, 96, 18); g.fill();
+  g.fillStyle = press > 0.5 ? '#2c2c2e' : '#232326';
+  rr(x, y + d, w, 96, 18); g.fill();
+  g.strokeStyle = '#3a3a3c'; g.lineWidth = 2; rr(x, y + d, w, 96, 18); g.stroke();
+  text(label, x + w / 2, y + d + 62, 36, C.fg, 600, 'center');
+}
+
+function laptop(x, y, s, color) {
+  g.save(); g.translate(x, y); g.scale(s, s);
+  g.strokeStyle = color; g.lineWidth = 5; g.lineJoin = 'round';
+  rr(-60, -44, 120, 78, 8); g.stroke();
+  g.beginPath(); g.moveTo(-80, 44); g.lineTo(80, 44); g.stroke();
+  g.restore();
+}
+function phone(x, y, s, color) {
+  g.save(); g.translate(x, y); g.scale(s, s);
+  g.strokeStyle = color; g.lineWidth = 5;
+  rr(-30, -58, 60, 116, 14); g.stroke();
+  g.beginPath(); g.moveTo(-8, -46); g.lineTo(8, -46); g.stroke();
+  g.restore();
+}
+
+// ---------- scenes (local time lt) ----------
+const SCENES_INTRO = [
+  { dur: 2.5, draw: sceneHook },
+  { dur: 3.0, draw: sceneLid },
+  { dur: 3.0, draw: sceneHud },
+  { dur: 2.5, draw: scenePanel },
+  { dur: 1.5, draw: sceneHotkey },
+];
+const SCENES_OUTRO = [{ dur: 3.0, draw: sceneOutro }];
+const SCENES = PART === 'outro' ? SCENES_OUTRO : SCENES_INTRO;
+const TOTAL = SCENES.reduce((a, s) => a + s.dur, 0);
+
+// Sound cues (seconds within this part) for the audio track.
+const SFX = [];
+(function buildSfx() {
+  let s = 0;
+  if (PART === 'outro') { SFX.push({ t: 0.35, kind: 'soft' }, { t: 1.4, kind: 'tick' }); return; }
+  // hook strikes
+  [0.95, 1.25, 1.55].forEach((t) => SFX.push({ t: s + t + 0.25, kind: 'tick' }));
+  s += 2.5;
+  SFX.push({ t: s + 0.35, kind: 'soft' }, { t: s + 0.95, kind: 'pop' });
+  s += 3.0;
+  SFX.push({ t: s + 0.25, kind: 'soft' }, { t: s + 1.35, kind: 'click' }, { t: s + 2.15, kind: 'pop' });
+  s += 3.0;
+  SFX.push({ t: s + 0.05, kind: 'pop' }, { t: s + 0.6, kind: 'click' }, { t: s + 0.9, kind: 'click' }, { t: s + 1.4, kind: 'whoosh' });
+  s += 2.5;
+  SFX.push({ t: s + 0.1, kind: 'key' }, { t: s + 0.25, kind: 'key' }, { t: s + 0.4, kind: 'key' }, { t: s + 0.75, kind: 'tick' });
+})();
+window.SFX = SFX;
+window.TOTAL = TOTAL;
+
+function sceneFade(lt, dur, fin = 0.25, fout = 0.25) {
+  return Math.min(clamp(lt / fin), clamp((dur - lt) / fout));
+}
+
+function sceneHook(lt, dur) {
+  g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
+  const out = clamp((lt - (dur - 0.3)) / 0.3);
+  headline(['AirPods', 'on Windows?'], null, prog(lt, 0, 0.6), out);
+  const items = ['Battery', 'Auto-pause', 'One-tap switch'];
+  const x = PORTRAIT ? 96 : 150;
+  const y0 = PORTRAIT ? 640 : 700;
+  items.forEach((s, i) => {
+    const ap = easeOut(prog(lt, 0.6 + i * 0.3, 0.9 + i * 0.3)) * (1 - out);
+    const yy = y0 + i * 92;
+    text(s, x, yy, 54, C.muted, 500, 'left', ap);
+    const sp = easeInOut(prog(lt, 0.95 + i * 0.3, 1.25 + i * 0.3));
+    if (sp > 0) {
+      g.save(); g.globalAlpha = 1 - out;
+      g.strokeStyle = C.red; g.lineWidth = 6; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(x - 6, yy - 18); g.lineTo(x - 6 + (tw(s, 54, 500) + 12) * sp, yy - 18); g.stroke();
+      g.restore();
+    }
+  });
+}
+
+function sceneLid(lt, dur) {
+  g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
+  const f = sceneFade(lt, dur, 0.2, 0.3);
+  headline(['Open the case.', 'See everything.'], null, prog(lt, 0, 0.5), 1 - f);
+  const caseY = PORTRAIT ? UI.y - 150 : UI.y - 190;
+  const open = prog(lt, 0.3, 0.9);
+  const cardP = prog(lt, 0.9, 1.4);
+  caseArt(UI.x, caseY, open, f * (1 - 0.65 * cardP));
+  if (cardP > 0) {
+    const cy = lerp(caseY + 460, PORTRAIT ? UI.y + 290 : UI.y + 230, easeBack(cardP));
+    const c = easeOut(prog(lt, 1.1, 1.9));
+    inkCard(UI.x, cy, [70 * c, 60 * c, 85 * c], f * clamp(cardP * 2), false);
+  }
+}
+
+function sceneHud(lt, dur) {
+  const f = sceneFade(lt, dur, 0.2, 0.3);
+  desktop(f);
+  g.save(); g.globalAlpha = f;
+  // headline over the desktop
+  headline(['Battery HUD.', 'Any edge.'], null, prog(lt, 0, 0.5), 0);
+  g.restore();
+  const slide = easeOut(prog(lt, 0.15, 0.6));
+  const restX = W - 78 * KH, restY = PORTRAIT ? 700 : 330;
+  // cursor path: comes in, grabs the strip, drags to top center, releases
+  const grab = prog(lt, 1.35, 1.36), drag = easeInOut(prog(lt, 1.4, 2.1)), snap = easeOut(prog(lt, 2.1, 2.35));
+  let hx = lerp(W + 40, restX, slide), hy = restY;
+  const topX = W / 2, topY = 0;
+  if (drag > 0) { hx = lerp(restX, topX - 40 * KH, drag); hy = lerp(restY, 60, drag); }
+  if (snap > 0) {
+    hud(topX, topY + 20 * KH, 1, f * snap);
+    hud(hx, hy, 0, f * (1 - snap));
+  } else {
+    hud(hx, hy, 0, f);
+  }
+  // cursor: comes in, grabs the middle of the strip, drags it, ends on the docked bar
+  const grabDX = 40 * KH, grabDY = 150 * KH;
+  const cIn = easeOut(prog(lt, 0.7, 1.3));
+  let cx = lerp(PORTRAIT ? W * 0.5 : W * 0.6, restX + grabDX, cIn), cy = lerp(H * 0.85, restY + grabDY, cIn);
+  if (drag > 0) { cx = hx + grabDX; cy = hy + grabDY; }
+  if (snap > 0) { cx = lerp(cx, topX + 60 * KH, snap); cy = lerp(cy, 70 * KH, snap); }
+  if (lt > 0.7) cursor(cx, cy, grab > 0 && snap === 0);
+}
+
+function scenePanel(lt, dur) {
+  const f = sceneFade(lt, dur, 0.15, 0.25);
+  const wipe = easeInOut(prog(lt, 1.4, 2.0));
+  const pop = easeBack(prog(lt, 0, 0.35));
+  const tg = [easeInOut(prog(lt, 0.55, 0.75)), easeInOut(prog(lt, 0.85, 1.05))];
+  const pcx = UI.x, pcy = PORTRAIT ? UI.y + 80 : UI.y;
+  // dark world
+  g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
+  headline(['Everything', 'one click away.'], null, prog(lt, 0, 0.4), 1 - f);
+  panel(pcx, pcy, false, tg, f * clamp(pop * 1.4), 0.9 + 0.1 * pop);
+  // light world revealed by a vertical wipe from the left
+  if (wipe > 0) {
+    g.save();
+    g.beginPath(); g.rect(0, 0, W * wipe, H); g.clip();
+    g.fillStyle = '#f2f2f5'; g.fillRect(0, 0, W, H);
+    g.save(); g.globalAlpha = f;
+    const x = PORTRAIT ? 96 : 150, y = PORTRAIT ? 300 : 420, big = PORTRAIT ? 96 : 88;
+    text('Everything', x, y, big, C.lfg, 700); text('one click away.', x, y + big * 1.08, big, C.lfg, 700);
+    g.restore();
+    panel(pcx, pcy, true, [1, 1], f, 1);
+    g.restore();
+    g.fillStyle = 'rgba(255,255,255,0.6)'; g.fillRect(W * wipe - 2, 0, 3, H);
+  }
+}
+
+function sceneHotkey(lt, dur) {
+  g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
+  const f = sceneFade(lt, dur, 0.12, 0.25);
+  g.save(); g.globalAlpha = f;
+  const keys = [['Ctrl', 150], ['Alt', 130], ['A', 110]];
+  const total = keys.reduce((a, k) => a + k[1], 0) + 2 * 24;
+  const kcx = PORTRAIT ? W / 2 : 560, kcy = PORTRAIT ? 700 : 380;
+  g.save(); g.translate(kcx, kcy); g.scale(K * 1.15, K * 1.15); g.translate(-kcx, -kcy);
+  let kx = kcx - total / 2;
+  const ky = kcy - 50;
+  keys.forEach(([l, w], i) => {
+    const p = prog(lt, 0.08 + i * 0.15, 0.16 + i * 0.15);
+    keycap(kx, ky, l, w, p);
+    kx += w + 24;
+  });
+  g.restore();
+  const ix = PORTRAIT ? W / 2 : 1330, iy = PORTRAIT ? 1250 : 560;
+  laptop(ix - 190, iy, 1.3, C.fg);
+  phone(ix + 190, iy, 1.3, C.fg);
+  const hop = easeInOut(prog(lt, 0.6, 1.25));
+  const dx = lerp(ix - 190, ix + 190, hop), dy = iy - 140 * Math.sin(Math.PI * hop);
+  pods(dx - 30, dy - 30, 60, C.fg);
+  g.strokeStyle = C.line; g.lineWidth = 3; g.setLineDash([8, 10]);
+  g.beginPath(); g.moveTo(ix - 120, iy - 40); g.quadraticCurveTo(ix, iy - 260, ix + 120, iy - 40); g.stroke(); g.setLineDash([]);
+  text('PC ⇄ iPhone', ix, iy + 170, 52, C.fg, 700, 'center');
+  text('one hotkey', ix, iy + 222, 32, C.muted, 400, 'center');
+  g.restore();
+}
+
+function sceneOutro(lt, dur) {
+  g.fillStyle = C.bg; g.fillRect(0, 0, W, H);
+  const f = Math.min(clamp(lt / 0.25), clamp((dur - lt) / 0.35));
+  g.save(); g.globalAlpha = f;
+  const cx = W / 2, cy = H / 2 - (PORTRAIT ? 120 : 60);
+  const s = easeBack(prog(lt, 0.1, 0.55));
+  g.save(); g.translate(cx, cy - 120); g.scale(s, s); pods(-60, -60, 120, C.fg); g.restore();
+  const tp = easeOut(prog(lt, 0.35, 0.8));
+  text('PodDeck', cx, cy + 70 + (1 - tp) * 20, 110, C.fg, 700, 'center', tp);
+  text('Free · open source · Windows', cx, cy + 135, 36, C.muted, 400, 'center', easeOut(prog(lt, 0.6, 1.0)));
+  const lp = easeOut(prog(lt, 1.2, 1.6));
+  text('link in bio', cx, cy + (PORTRAIT ? 330 : 250), 48, C.fg, 600, 'center', lp);
+  text('@chenlab789', cx, cy + (PORTRAIT ? 385 : 300), 32, C.muted, 400, 'center', lp);
+  g.restore();
+}
+
+function render(t) {
+  let s = 0;
+  for (const sc of SCENES) {
+    if (t < s + sc.dur || sc === SCENES[SCENES.length - 1]) { sc.draw(clamp(t - s, 0, sc.dur), sc.dur); return; }
+    s += sc.dur;
+  }
+}
+window.render = render;
+
+if (q.has('t')) render(+q.get('t'));
+else if (!q.has('static')) {
+  const t0 = performance.now();
+  const loop = () => { render(((performance.now() - t0) / 1000) % TOTAL); requestAnimationFrame(loop); };
+  loop();
+}
+</script>
+</body>
+</html>
