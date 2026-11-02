@@ -29,6 +29,18 @@ public partial class TrayPanel : Window
         Deactivated += (_, _) => { Hide(); _hiddenAt = DateTime.Now; };
         BuildModes();
         RefreshToggles();
+
+        // Drag anywhere on the bar, not only on the thin thumb.
+        Vol.PreviewMouseLeftButtonDown += (_, e) => { Vol.CaptureMouse(); SetVolFromPointer(e); e.Handled = true; };
+        Vol.PreviewMouseMove += (_, e) => { if (Vol.IsMouseCaptured) SetVolFromPointer(e); };
+        Vol.PreviewMouseLeftButtonUp += (_, e) => { Vol.ReleaseMouseCapture(); e.Handled = true; };
+        Vol.PreviewMouseWheel += (_, e) => { Vol.Value = Math.Clamp(Vol.Value + Math.Sign(e.Delta) * 5, 0, 100); e.Handled = true; };
+    }
+
+    void SetVolFromPointer(System.Windows.Input.MouseEventArgs e)
+    {
+        double x = e.GetPosition(Vol).X;
+        Vol.Value = Math.Clamp(x / Math.Max(1, Vol.ActualWidth), 0, 1) * 100;
     }
 
     /// <summary>Clicking the tray icon while the panel is open deactivates it first; don't reopen it.</summary>
