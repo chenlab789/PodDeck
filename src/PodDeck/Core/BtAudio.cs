@@ -33,23 +33,36 @@ public static class BtAudio
     public static bool Connect() => SendOneShot(KSPROPERTY_ONESHOT_RECONNECT);
     public static bool Disconnect() => SendOneShot(KSPROPERTY_ONESHOT_DISCONNECT);
 
+    public static Action<string>? Log { get; set; }
+
+    static bool Ok(int hr, string step)
+    {
+        if (hr != 0) Log?.Invoke($"  {step} failed hr=0x{hr:X8}");
+        return hr == 0;
+    }
+
     static bool SendOneShot(uint id)
     {
         bool any = false;
-        var enumerator = (IMMDeviceEnumeratorRaw)new MMDeviceEnumeratorComObject();
-        foreach (var ep in Endpoints(DataFlow.Render))
+        var endpoints = Endpoints(DataFlow.Render).ToList();
+        var enumerator = CreateUniqueEnumerator();
+        try
         {
+        foreach (var ep in endpoints)
+        {
+            Log?.Invoke($"endpoint '{ep.FriendlyName}' state={ep.State} id={ep.ID}");
             try
             {
-                if (enumerator.GetDevice(ep.ID, out var dev) != 0) continue;
+                if (!Ok(enumerator.GetDevice(ep.ID, out var dev), "GetDevice(endpoint)")) continue;
                 var iidTopo = typeof(IDeviceTopology).GUID;
-                if (dev.Activate(ref iidTopo, 0x17, IntPtr.Zero, out var topoObj) != 0) continue;
+                if (!Ok(dev.Activate(ref iidTopo, 0x17, IntPtr.Zero, out var topoObj), "Activate(IDeviceTopology)")) continue;
                 var topo = (IDeviceTopology)topoObj;
-                if (topo.GetConnector(0, out var conn) != 0) continue;
-                if (conn.GetDeviceIdConnectedTo(out var filterId) != 0) continue;
-                if (enumerator.GetDevice(filterId, out var filterDev) != 0) continue;
+                if (!Ok(topo.GetConnector(0, out var conn), "GetConnector(0)")) continue;
+                if (!Ok(conn.GetDeviceIdConnectedTo(out var filterId), "GetDeviceIdConnectedTo")) continue;
+                Log?.Invoke($"  filter={filterId}");
+                if (!Ok(enumerator.GetDevice(filterId, out var filterDev), "GetDevice(filter)")) continue;
                 var iidKs = typeof(IKsControl).GUID;
-                if (filterDev.Activate(ref iidKs, 0x17, IntPtr.Zero, out var ksObj) != 0) continue;
+                if (!Ok(filterDev.Activate(ref iidKs, 0x17, IntPtr.Zero, out var ksObj), "Activate(IKsControl)")) continue;
                 var ks = (IKsControl)ksObj;
 
                 var prop = new KSPROPERTY { Set = KSPROPSETID_BtAudio, Id = id, Flags = KSPROPERTY_TYPE_GET };
@@ -59,14 +72,33 @@ public static class BtAudio
                 {
                     Marshal.StructureToPtr(prop, p, false);
                     int hr = ks.KsProperty(p, (uint)size, IntPtr.Zero, 0, out _);
+                    Log?.Invoke($"  KsProperty(id={id}) hr=0x{hr:X8}");
                     if (hr >= 0) any = true;
                 }
                 finally { Marshal.FreeHGlobal(p); }
             }
-            catch { /* endpoint without a BT filter */ }
+            catch (Exception ex) { Log?.Invoke($"  exception {ex.GetType().Name}: {ex.Message}"); }
         }
+        }
+        finally { Marshal.FinalReleaseComObject(enumerator); }
         return any;
     }
+
+    /// <summary>
+    /// The device enumerator is a process-wide singleton, so a normal RCW would be shared with
+    /// NAudio's (typed as its own coclass) and break NAudio's casts. Use a private, uncached RCW.
+    /// </summary>
+    static IMMDeviceEnumeratorRaw CreateUniqueEnumerator()
+    {
+        var clsid = new Guid("BCDE0395-E52F-467C-8E3D-C4579291692E");
+        var iidUnknown = new Guid("00000000-0000-0000-C000-000000000046");
+        Marshal.ThrowExceptionForHR(CoCreateInstance(ref clsid, IntPtr.Zero, 0x17, ref iidUnknown, out var punk));
+        try { return (IMMDeviceEnumeratorRaw)Marshal.GetUniqueObjectForIUnknown(punk); }
+        finally { Marshal.Release(punk); }
+    }
+
+    [DllImport("ole32.dll")]
+    static extern int CoCreateInstance(ref Guid clsid, IntPtr outer, uint clsCtx, ref Guid iid, out IntPtr obj);
 
     // ---------- volume ----------
 
@@ -112,9 +144,6 @@ public static class BtAudio
 
     [StructLayout(LayoutKind.Sequential)]
     struct KSPROPERTY { public Guid Set; public uint Id; public uint Flags; }
-
-    [ComImport, Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")]
-    class MMDeviceEnumeratorComObject { }
 
     [ComImport, Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     interface IMMDeviceEnumeratorRaw

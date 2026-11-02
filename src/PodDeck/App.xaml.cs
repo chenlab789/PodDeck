@@ -26,6 +26,26 @@ public partial class App : Application
         _settings = Settings.Load();
         BtAudio.NameMatch = _settings.DeviceName;
 
+        if (e.Args.Contains("--diag"))
+        {
+            var log = new System.Text.StringBuilder();
+            var path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "poddeck-diag.txt");
+            System.IO.File.WriteAllText(path, "started\n");
+            BtAudio.Log = s => log.AppendLine(s);
+            try
+            {
+                log.AppendLine($"connected={SafeIsConnected()}");
+                using (var en = new NAudio.CoreAudioApi.MMDeviceEnumerator())
+                    foreach (var d in en.EnumerateAudioEndPoints(NAudio.CoreAudioApi.DataFlow.All, NAudio.CoreAudioApi.DeviceState.All))
+                        try { log.AppendLine($"[all] {d.DataFlow} {d.State} '{d.FriendlyName}'"); } catch (Exception ex) { log.AppendLine($"[all] ? {ex.Message}"); }
+                log.AppendLine($"Connect() => {BtAudio.Connect()}");
+            }
+            catch (Exception ex) { log.AppendLine("FATAL " + ex); }
+            System.IO.File.WriteAllText(path, log.ToString());
+            Shutdown();
+            return;
+        }
+
         _overlay = new LidOverlay { LowLevel = () => _settings.LowBatteryLevel };
         _overlay.ActionRequested += ToggleConnection;
 
