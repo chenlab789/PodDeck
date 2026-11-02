@@ -28,7 +28,8 @@ public partial class LidOverlay : Window
         int low = LowLevel();
         Visuals.FillBig(LeftCol, "Left", s.Left, s.LeftCharging, low);
         Visuals.FillBig(RightCol, "Right", s.Right, s.RightCharging, low);
-        Visuals.FillBig(CaseCol, "Case", s.Case, s.CaseCharging, low);
+        var c = CaseMemory.Resolve(s);
+        Visuals.FillBig(CaseCol, "Case", c.Level, s.CaseCharging && !c.Stale, low, c.Stale, c.Ago, c.Tooltip);
     }
 
     public void Pop()

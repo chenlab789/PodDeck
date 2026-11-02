@@ -26,6 +26,7 @@ public partial class App : Application
         _settings = Settings.Load();
         BtAudio.NameMatch = _settings.DeviceName;
         Theme.Init(_settings.Theme);
+        CaseMemory.Init(_settings);
 
         if (e.Args.Contains("--unmute-mic"))
         {
@@ -134,7 +135,7 @@ public partial class App : Application
 
         _watcher = new PodWatcher();
         _watcher.Advert += s => Ui(() => _live?.OnAdvert(s));
-        _watcher.StateChanged += s => Ui(() => OnState(s));
+        _watcher.StateChanged += s => Ui(() => { CaseMemory.Observe(s); OnState(s); });
         _watcher.LidOpened += s => Ui(() => { if (_settings.ShowLidOverlay) { _overlay.Update(s, SafeIsConnected()); _overlay.Pop(); } });
         _watcher.LidClosed += () => Ui(() => _overlay.FadeOut());
         _watcher.EarCountChanged += (before, after) => Ui(() => OnEarChange(before, after));

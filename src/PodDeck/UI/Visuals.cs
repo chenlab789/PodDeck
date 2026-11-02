@@ -29,25 +29,27 @@ static class Visuals
     public static string Num(int? level) => level is null ? "—" : $"{level}";
 
     /// <summary>10-step segmented battery bar.</summary>
-    public static StackPanel Segments(int? level, int low, double w = 5, double h = 4)
+    public static StackPanel Segments(int? level, int low, double w = 5, double h = 4, bool stale = false)
     {
         var sp = new StackPanel { Orientation = Orientation.Horizontal };
         int on = level is null ? 0 : (int)Math.Ceiling(level.Value / 10.0);
-        var lit = LevelBrush(level, low);
+        var lit = stale ? Muted : LevelBrush(level, low);
         for (int i = 0; i < 10; i++)
             sp.Children.Add(new Rectangle { Width = w, Height = h, RadiusX = 1, RadiusY = 1, Margin = new Thickness(0, 0, 2, 0), Fill = i < on ? lit : SegOff });
         return sp;
     }
 
     /// <summary>Big light number + segment bar + small caps label, used by the lid card.</summary>
-    public static void FillBig(Panel host, string caption, int? level, bool charging, int low)
+    public static void FillBig(Panel host, string caption, int? level, bool charging, int low,
+        bool stale = false, string? ago = null, string? tooltip = null)
     {
         host.Children.Clear();
+        host.ToolTip = string.IsNullOrEmpty(tooltip) ? null : tooltip;
         var row = new StackPanel { Orientation = Orientation.Horizontal };
         row.Children.Add(new TextBlock
         {
             Text = Num(level), FontSize = 30, FontWeight = FontWeights.Light, FontFamily = Mono,
-            Foreground = LevelBrush(level, low),
+            Foreground = stale ? Muted : LevelBrush(level, low),
         });
         if (charging)
             row.Children.Add(new Path
@@ -56,10 +58,11 @@ static class Visuals
                 Stretch = Stretch.Uniform, Margin = new Thickness(4, 0, 0, 6), VerticalAlignment = VerticalAlignment.Bottom,
             });
         host.Children.Add(row);
-        var seg = Segments(level, low);
+        var seg = Segments(level, low, stale: stale);
         seg.Margin = new Thickness(0, 4, 0, 4);
         host.Children.Add(seg);
-        host.Children.Add(new TextBlock { Text = caption.ToUpperInvariant(), FontSize = 10.5, Foreground = Muted });
+        string cap = caption.ToUpperInvariant() + (stale && !string.IsNullOrEmpty(ago) ? $" · {ago}" : "");
+        host.Children.Add(new TextBlock { Text = cap, FontSize = 10.5, Foreground = Muted });
     }
 
     /// <summary>iOS-style switch drawn into an existing Border (track) + Ellipse (knob).</summary>

@@ -45,7 +45,8 @@ public partial class TrayPanel : Window
         int low = _settings.LowBatteryLevel;
         AddBat(0, "Left", s?.Left, s?.LeftCharging == true, low);
         AddBat(1, "Right", s?.Right, s?.RightCharging == true, low);
-        AddBat(2, "Case", s?.Case, s?.CaseCharging == true, low);
+        var c = CaseMemory.Resolve(s);
+        AddBat(2, c.Stale ? $"Case · {c.Ago}" : "Case", c.Level, s?.CaseCharging == true && !c.Stale, low, c.Stale, c.Tooltip);
 
         var v = BtAudio.GetVolume();
         VolBar.IsEnabled = v is not null;
@@ -54,16 +55,16 @@ public partial class TrayPanel : Window
         if (v is null) VolText.Text = "—";
     }
 
-    void AddBat(int col, string label, int? level, bool charging, int low)
+    void AddBat(int col, string label, int? level, bool charging, int low, bool stale = false, string? tooltip = null)
     {
-        var sp = new StackPanel();
+        var sp = new StackPanel { ToolTip = string.IsNullOrEmpty(tooltip) ? null : tooltip, Background = System.Windows.Media.Brushes.Transparent };
         sp.Children.Add(new TextBlock { Text = label, FontSize = 11, Foreground = Visuals.Muted });
         sp.Children.Add(new TextBlock
         {
             Text = (charging ? "+" : "") + Visuals.Pct(level), FontSize = 15, FontWeight = FontWeights.Light,
-            FontFamily = Visuals.Mono, Foreground = Visuals.LevelBrush(level, low), Margin = new Thickness(0, 2, 0, 4),
+            FontFamily = Visuals.Mono, Foreground = stale ? Visuals.Muted : Visuals.LevelBrush(level, low), Margin = new Thickness(0, 2, 0, 4),
         });
-        sp.Children.Add(Visuals.Segments(level, low, 4, 3));
+        sp.Children.Add(Visuals.Segments(level, low, 4, 3, stale));
         Grid.SetColumn(sp, col);
         BatRow.Children.Add(sp);
     }

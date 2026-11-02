@@ -72,7 +72,10 @@ public sealed class StatusHud : Window
         };
         var dot = new Ellipse { Width = 6, Height = 6, Fill = _connected ? Visuals.Green : Visuals.Muted };
 
-        var items = new (string Label, int? Level)[] { ("L", _state?.Left), ("R", _state?.Right), ("C", _state?.Case) };
+        var c = CaseMemory.Resolve(_state);
+        var items = new (string Label, int? Level, bool Stale)[] { ("L", _state?.Left, false), ("R", _state?.Right, false), ("C", c.Level, c.Stale) };
+        ToolTip = c.Stale ? $"PodDeck · case {c.Tooltip.ToLowerInvariant()} · click to open, drag to an edge to move"
+                          : "PodDeck · click to open, drag to an edge to move";
 
         if (Horizontal)
         {
@@ -82,7 +85,7 @@ public sealed class StatusHud : Window
             dot.VerticalAlignment = VerticalAlignment.Center;
             row.Children.Add(glyph);
             row.Children.Add(dot);
-            foreach (var (label, level) in items) row.Children.Add(HItem(label, level, low));
+            foreach (var (label, level, stale) in items) row.Children.Add(HItem(label, level, low, stale));
             _frame.Child = row;
             _frame.Height = 38;
             _frame.Width = double.NaN;
@@ -100,7 +103,7 @@ public sealed class StatusHud : Window
             dot.HorizontalAlignment = HorizontalAlignment.Center;
             col.Children.Add(glyph);
             col.Children.Add(dot);
-            foreach (var (label, level) in items) col.Children.Add(VItem(label, level, low));
+            foreach (var (label, level, stale) in items) col.Children.Add(VItem(label, level, low, stale));
             _frame.Child = col;
             _frame.Width = 52;
             _frame.Height = double.NaN;
@@ -113,33 +116,35 @@ public sealed class StatusHud : Window
         }
     }
 
-    static UIElement VItem(string label, int? level, int low)
+    static UIElement VItem(string label, int? level, int low, bool stale)
     {
+        var fill = stale ? Visuals.Muted : Visuals.LevelBrush(level, low);
         var sp = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 8, 0, 0) };
         sp.Children.Add(new TextBlock { Text = label, FontSize = 9, Foreground = Visuals.Muted, HorizontalAlignment = HorizontalAlignment.Center });
         var tube = new Border
         {
             Width = 6, Height = Tube, CornerRadius = new CornerRadius(3), Background = Visuals.SegOff,
             Margin = new Thickness(0, 3, 0, 3), HorizontalAlignment = HorizontalAlignment.Center, ClipToBounds = true,
-            Child = new Border { Height = Tube * (level ?? 0) / 100.0, VerticalAlignment = VerticalAlignment.Bottom, Background = Visuals.LevelBrush(level, low) },
+            Child = new Border { Height = Tube * (level ?? 0) / 100.0, VerticalAlignment = VerticalAlignment.Bottom, Background = fill },
         };
         sp.Children.Add(tube);
-        sp.Children.Add(Number(level, low, HorizontalAlignment.Center));
+        sp.Children.Add(Number(level, low, HorizontalAlignment.Center, stale));
         return sp;
     }
 
-    static UIElement HItem(string label, int? level, int low)
+    static UIElement HItem(string label, int? level, int low, bool stale)
     {
+        var fill = stale ? Visuals.Muted : Visuals.LevelBrush(level, low);
         var sp = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(12, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
         sp.Children.Add(new TextBlock { Text = label, FontSize = 9.5, Foreground = Visuals.Muted, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 5, 0) });
         var tube = new Border
         {
             Width = Tube, Height = 6, CornerRadius = new CornerRadius(3), Background = Visuals.SegOff,
             VerticalAlignment = VerticalAlignment.Center, ClipToBounds = true,
-            Child = new Border { Width = Tube * (level ?? 0) / 100.0, HorizontalAlignment = HorizontalAlignment.Left, Background = Visuals.LevelBrush(level, low) },
+            Child = new Border { Width = Tube * (level ?? 0) / 100.0, HorizontalAlignment = HorizontalAlignment.Left, Background = fill },
         };
         sp.Children.Add(tube);
-        var n = Number(level, low, HorizontalAlignment.Left);
+        var n = Number(level, low, HorizontalAlignment.Left, stale);
         n.Margin = new Thickness(6, 0, 0, 0);
         n.MinWidth = 18;
         n.VerticalAlignment = VerticalAlignment.Center;
@@ -147,10 +152,10 @@ public sealed class StatusHud : Window
         return sp;
     }
 
-    static TextBlock Number(int? level, int low, HorizontalAlignment align) => new()
+    static TextBlock Number(int? level, int low, HorizontalAlignment align, bool stale = false) => new()
     {
         Text = Visuals.Num(level), FontSize = 11, FontWeight = FontWeights.SemiBold,
-        Foreground = Visuals.LevelBrush(level, low), HorizontalAlignment = align,
+        Foreground = stale ? Visuals.Muted : Visuals.LevelBrush(level, low), HorizontalAlignment = align,
     };
 
     /// <summary>Show and snap to the saved edge and position.</summary>
