@@ -12,8 +12,11 @@
             </Border.Effect>
             <StackPanel>
                 <DockPanel>
-                    <Path Data="{StaticResource PodsGlyph}" Fill="{DynamicResource InkFg}" Width="46" Height="46"
-                          Stretch="Uniform" VerticalAlignment="Center" Margin="0,0,22,0"/>
+                    <Image Source="{StaticResource PodsArt}" Width="62" Height="71" VerticalAlignment="Center" Margin="0,0,20,0">
+                        <Image.Effect>
+                            <DropShadowEffect BlurRadius="14" ShadowDepth="5" Direction="270" Opacity="0.35" Color="#000000"/>
+                        </Image.Effect>
+                    </Image>
                     <StackPanel>
                         <DockPanel>
                             <Button x:Name="CloseBtn" DockPanel.Dock="Right" Style="{StaticResource FlatButton}" Tag="12"

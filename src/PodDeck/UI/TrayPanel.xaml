@@ -29,7 +29,12 @@
             <StackPanel>
                 <DockPanel Margin="0,0,0,12">
                     <TextBlock x:Name="ConnText" DockPanel.Dock="Right" FontSize="11" VerticalAlignment="Bottom"/>
-                    <TextBlock x:Name="NameText" Text="AirPods" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource InkFg}"/>
+                    <Image Source="{StaticResource PodsArt}" Width="28" Height="32" Margin="0,0,10,0" VerticalAlignment="Center">
+                        <Image.Effect>
+                            <DropShadowEffect BlurRadius="8" ShadowDepth="2" Direction="270" Opacity="0.35" Color="#000000"/>
+                        </Image.Effect>
+                    </Image>
+                    <TextBlock x:Name="NameText" Text="AirPods" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource InkFg}" VerticalAlignment="Center"/>
                 </DockPanel>
 
                 <Border BorderBrush="{DynamicResource InkLine}" BorderThickness="0,1,0,0" Padding="0,10">

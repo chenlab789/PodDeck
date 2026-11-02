@@ -58,10 +58,11 @@ public sealed class StatusHud : Window
     void Build()
     {
         int low = _settings.LowBatteryLevel;
-        var glyph = new Path
+        var glyph = new Image
         {
-            Data = (Geometry)Application.Current.FindResource("PodsGlyph"),
-            Fill = Visuals.Fg, Width = 18, Height = 18, Stretch = Stretch.Uniform,
+            Source = (ImageSource)Application.Current.FindResource("PodsArt"),
+            Width = 20, Height = 23,
+            Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 5, ShadowDepth = 1, Direction = 270, Opacity = 0.35 },
         };
         var dot = new Ellipse { Width = 6, Height = 6, Fill = _connected ? Visuals.Green : Visuals.Muted };
 
