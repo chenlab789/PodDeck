@@ -64,7 +64,7 @@
 
                 <Button x:Name="PauseTile" Grid.Row="2" Grid.Column="2" Style="{StaticResource FlatButton}" Tag="18"
                         Background="#14FFFFFF" Padding="12,14,12,12" HorizontalContentAlignment="Left" Click="PauseTile_Click"
-                        ToolTip="Pause media when you take an AirPod out">
+                        ToolTip="Pauses media when you take AirPods out. Taking both out pauses in about 3-5 s; one pod alone can take 10-20 s (AirPods report the second pod slowly over Bluetooth LE).">
                     <StackPanel>
                         <Border x:Name="PauseDot" Width="34" Height="34" CornerRadius="17" HorizontalAlignment="Left">
                             <Ellipse x:Name="PauseDotIn" Width="12" Height="12"/>

@@ -138,6 +138,7 @@ public partial class TrayPanel : Window
     void RefreshToggles()
     {
         Paint(PauseDot, PauseDotIn, PauseState, _settings.PauseOnRemove);
+        if (_settings.PauseOnRemove) PauseState.Text = "On · best with both out";
         Paint(StereoDot, StereoDotIn, StereoState, _settings.KeepStereo);
     }
 
